@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Focus Flow - Dream Scape</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .particle { position:absolute; border-radius:50%; pointer-events:none; z-index:0; }
+    .note { transition:transform .2s ease, box-shadow .2s ease; z-index:1; cursor:grab; transform-origin:center; position:absolute; }
+    .note:hover { transform:translateY(-2px); box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);}
+    .note.dragging { cursor:grabbing; transform:scale(1.05) translateY(-5px); box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 10px 10px -5px rgba(0,0,0,.04);}
+    .note.enlarged { transform:scale(1.2); z-index:10; }
+    .note-content { resize:none; background-color:transparent; }
+    .color-option { width:24px; height:24px; border-radius:50%; cursor:pointer; transition:transform .2s ease; }
+    .color-option:hover { transform:scale(1.2);}
+    .dark-mode-toggle{transition:all .5s ease;}
+    .dark .moon{transform:rotate(0deg);opacity:1;}
+    .dark .sun{transform:rotate(90deg);opacity:0;}
+    .light .moon{transform:rotate(-90deg);opacity:0;}
+    .light .sun{transform:rotate(0deg);opacity:1;}
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-all duration-300 overflow-hidden relative">
+  <div id="particles"></div>
+
+  <div class="container mx-auto px-4 py-8 relative z-10">
+    <header class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">
+        <span class="text-indigo-500">Dream</span><span class="text-pink-400">Scape</span>
+      </h1>
+      <div class="flex items-center space-x-4">
+        <button id="darkModeToggle" class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+          <i class="fas fa-sun sun absolute text-yellow-400"></i>
+          <i class="fas fa-moon moon absolute text-indigo-300"></i>
+        </button>
+        <button id="addNoteBtn" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg shadow-md flex items-center">
+          <i class="fas fa-plus mr-2"></i><span>Add Note</span>
+        </button>
+      </div>
+    </header>
+
+    <div id="colorPalette" class="hidden mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+      <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Choose a color:</h3>
+      <div class="flex space-x-2">
+        <div class="color-option bg-pink-200" data-color="bg-pink-200"></div>
+        <div class="color-option bg-blue-200" data-color="bg-blue-200"></div>
+        <div class="color-option bg-green-200" data-color="bg-green-200"></div>
+        <div class="color-option bg-yellow-200" data-color="bg-yellow-200"></div>
+        <div class="color-option bg-purple-200" data-color="bg-purple-200"></div>
+        <div class="color-option bg-indigo-200" data-color="bg-indigo-200"></div>
+      </div>
+    </div>
+
+    <!-- absolute container -->
+    <div id="board" class="min-h-[70vh] border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-4 relative overflow-hidden">
+    </div>
+  </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const board = document.getElementById("board");
+  const addNoteBtn = document.getElementById("addNoteBtn");
+  const colorPalette = document.getElementById("colorPalette");
+  const darkModeToggle = document.getElementById("darkModeToggle");
+  const body = document.body;
+
+  let currentColor = "bg-pink-200";
+  let isDragging = false;
+  let currentNote = null, offsetX=0, offsetY=0;
+  let particles=[];
+
+  createParticles(30);
+  loadNotes();
+
+  addNoteBtn.addEventListener("click", () => {
+    colorPalette.classList.toggle("hidden");
+    if (!colorPalette.classList.contains("hidden")) return;
+    createNote();
+  });
+
+  document.querySelectorAll(".color-option").forEach(opt=>{
+    opt.addEventListener("click",()=>{
+      currentColor=opt.dataset.color;
+      colorPalette.classList.add("hidden");
+      createNote();
+    });
+  });
+
+  function createNote(noteData=null){
+    const id = noteData?.id || Date.now().toString();
+    const note = document.createElement("div");
+    note.className=`note p-4 rounded-lg shadow-md ${noteData?.color||currentColor} dark:bg-opacity-80 w-48 h-48`;
+    note.dataset.id=id;
+
+    note.style.left = (noteData?.x || 50) + "px";
+    note.style.top = (noteData?.y || 50) + "px";
+
+    if(noteData?.enlarged) note.classList.add("enlarged");
+
+    note.innerHTML=`
+      <textarea class="note-content w-full h-full p-2 rounded bg-transparent focus:outline-none resize-none dark:text-gray-800"
+      placeholder="Start dreaming...">${noteData?.content||""}</textarea>
+      <button class="delete-note absolute top-1 right-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+
+    note.querySelector(".delete-note").addEventListener("click",e=>{
+      e.stopPropagation(); deleteNote(id);
+    });
+    note.addEventListener("click",e=>{
+      if(e.target.tagName!=="TEXTAREA" && !isDragging){
+        note.classList.toggle("enlarged");
+        saveNotes();
+      }
+    });
+    note.addEventListener("mousedown", startDrag);
+    note.querySelector("textarea").addEventListener("input", saveNotes);
+
+    board.appendChild(note);
+    saveNotes();
+  }
+
+  function startDrag(e){
+    if(e.target.tagName==="TEXTAREA") return;
+    isDragging=true;
+    currentNote=e.currentTarget;
+    currentNote.classList.add("dragging");
+    const rect=currentNote.getBoundingClientRect();
+    const boardRect=board.getBoundingClientRect();
+    offsetX=e.clientX-rect.left; offsetY=e.clientY-rect.top;
+    currentNote.style.zIndex=100;
+    document.addEventListener("mousemove",dragNote);
+    document.addEventListener("mouseup",stopDrag);
+  }
+  function dragNote(e){
+    if(!isDragging) return;
+    const boardRect=board.getBoundingClientRect();
+    let x=e.clientX-boardRect.left-offsetX;
+    let y=e.clientY-boardRect.top-offsetY;
+    x=Math.max(0,Math.min(x,boardRect.width-currentNote.offsetWidth));
+    y=Math.max(0,Math.min(y,boardRect.height-currentNote.offsetHeight));
+    currentNote.style.left=x+"px"; currentNote.style.top=y+"px";
+  }
+  function stopDrag(){
+    if(!isDragging) return;
+    isDragging=false;
+    currentNote.classList.remove("dragging");
+    currentNote.style.zIndex=1;
+    document.removeEventListener("mousemove",dragNote);
+    document.removeEventListener("mouseup",stopDrag);
+    saveNotes();
+  }
+
+  function deleteNote(id){
+    const note=document.querySelector(`.note[data-id="${id}"]`);
+    if(note){ note.remove(); saveNotes(); }
+  }
+
+  function saveNotes(){
+    const notes=[];
+    document.querySelectorAll(".note").forEach(note=>{
+      notes.push({
+        id:note.dataset.id,
+        content:note.querySelector("textarea").value,
+        color:Array.from(note.classList).find(c=>c.startsWith("bg-")),
+        x:parseInt(note.style.left)||0,
+        y:parseInt(note.style.top)||0,
+        enlarged:note.classList.contains("enlarged")
+      });
+    });
+    localStorage.setItem("dreamscape-notes",JSON.stringify(notes));
+  }
+
+  function loadNotes(){
+    const saved=localStorage.getItem("dreamscape-notes");
+    if(!saved) return;
+    JSON.parse(saved).forEach(data=>createNote(data));
+  }
+
+  darkModeToggle.addEventListener("click",()=>{
+    body.classList.toggle("dark"); body.classList.toggle("light");
+    localStorage.setItem("dreamscape-dark-mode",body.classList.contains("dark"));
+  });
+  if(localStorage.getItem("dreamscape-dark-mode")==="false"){
+    body.classList.remove("dark"); body.classList.add("light");
+  }
+
+  function createParticles(count){
+    const container=document.getElementById("particles");
+    for(let i=0;i<count;i++){
+      const p=document.createElement("div");
+      p.className="particle";
+      const size=Math.random()*10+5;
+      const x=Math.random()*window.innerWidth;
+      const y=Math.random()*window.innerHeight;
+      p.style.width=p.style.height=size+"px";
+      p.style.left=x+"px"; p.style.top=y+"px";
+      p.style.backgroundColor=`rgba(${150+Math.random()*100},${150+Math.random()*100},${150+Math.random()*100},${0.2+Math.random()*0.3})`;
+      container.appendChild(p);
+      particles.push({element:p,x,y,speedX:(Math.random()-0.5)*0.2,speedY:(Math.random()-0.5)*0.2});
+    }
+    animateParticles();
+  }
+  function animateParticles(){
+    particles.forEach(p=>{
+      p.x+=p.speedX; p.y+=p.speedY;
+      if(p.x<=0||p.x>=window.innerWidth) p.speedX*=-1;
+      if(p.y<=0||p.y>=window.innerHeight) p.speedY*=-1;
+      p.element.style.left=p.x+"px"; p.element.style.top=p.y+"px";
+    });
+    requestAnimationFrame(animateParticles);
+  }
+});
+</script>
+</body>
+</html>

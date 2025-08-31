@@ -46,6 +46,6 @@ Open __index.html__ in your browser.
 
 Start being productive in style! 🎉
 
-📸 Preview
+### 📸 Preview
 
 <img width="1898" height="909" alt="image" src="https://github.com/user-attachments/assets/a99e9813-28da-49e5-b0d3-32b5d01f74fd" />

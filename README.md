@@ -1,5 +1,6 @@
 # FocusFlow 🚀  
-<img width="1894" height="280" alt="image" src="https://github.com/user-attachments/assets/906ee06b-17b2-4cdd-b1a9-89c4dd4a1f22" />
+<img width="1900" height="183" alt="{3B151598-8D2A-4085-A4F9-4FE24C14C262}" src="https://github.com/user-attachments/assets/cd1da82b-aa19-438c-b7e0-036f042d1a76" />
+
 
 FocusFlow is a sleek productivity dashboard built with **React** that keeps the theme minimal while pushing the limits of animations and interactivity.  
 

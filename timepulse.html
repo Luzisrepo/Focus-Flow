@@ -134,6 +134,170 @@
             75% { transform: rotate(5deg); }
             100% { transform: rotate(0); }
         }
+        
+        /* New Dropdown Styles - Fixed Z-index */
+        .select-container {
+            position: relative;
+            width: 100%;
+            z-index: 20; /* Increased z-index */
+        }
+        
+        .select-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark .select-header {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .select-header:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+        
+        .dark .select-header:hover {
+            background: rgba(0, 0, 0, 0.3);
+            border-color: rgba(99, 102, 241, 0.6);
+        }
+        
+        .select-header.open {
+            border-radius: 12px 12px 0 0;
+            border-color: rgba(99, 102, 241, 0.6);
+            background: rgba(255, 255, 255, 0.12);
+        }
+        
+        .dark .select-header.open {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        .select-header i {
+            transition: transform 0.3s ease;
+            color: #6366f1;
+        }
+        
+        .select-header.open i {
+            transform: rotate(180deg);
+        }
+        
+        .select-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+            z-index: 100; /* Increased z-index */
+            max-height: 0;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.6);
+            border-top: none;
+        }
+        
+        .dark .select-options {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(99, 102, 241, 0.6);
+            border-top: none;
+        }
+        
+        .select-options.open {
+            max-height: 300px;
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .select-option {
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .select-option i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            color: #6366f1;
+        }
+        
+        .select-option:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-left-color: #6366f1;
+            padding-left: 22px;
+        }
+        
+        .select-option.active {
+            background: rgba(99, 102, 241, 0.2);
+            border-left-color: #6366f1;
+        }
+        
+        .selected-text {
+            display: flex;
+            align-items: center;
+        }
+        
+        .selected-text i {
+            margin-right: 10px;
+            color: #6366f1;
+        }
+        
+        .preview-button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .preview-button i {
+            margin-right: 8px;
+        }
+        
+        .preview-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(99, 102, 241, 0.4);
+        }
+        
+        /* Ensure settings panel has proper z-index context */
+        #settings-panel {
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Ensure keyboard shortcuts has lower z-index */
+        #keyboard-shortcuts {
+            position: relative;
+            z-index: 5;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-gray-900 dark:to-gray-800 min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
@@ -323,7 +487,7 @@
                 </div>
                 
                 <!-- Settings -->
-                <div class="glass-panel rounded-2xl p-6">
+                <div id="settings-panel" class="glass-panel rounded-2xl p-6">
                     <h3 class="text-lg font-semibold mb-4">Settings</h3>
                     
                     <div class="space-y-4">
@@ -336,7 +500,40 @@
                                 <span class="text-sm font-medium">Alarm Sound</span>
                             </label>
                         </div>
-                        <div> <label class="block text-sm font-medium mb-1">Alarm Sound</label> <select id="alarm-sound" class="w-full glass-panel rounded-lg px-4 py-2"> <option value="bell">Bell</option> <option value="digital">Digital</option> <option value="chime">Chime</option> <option value="beep">Beep</option> </select> </div>
+                        
+                        <!-- New Modern Dropdown -->
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Alarm Sound</label>
+                            <div class="select-container">
+                                <div class="select-header">
+                                    <div class="selected-text">
+                                        <i class="fas fa-bell"></i>
+                                        <span>Bell</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                
+                                <div class="select-options">
+                                    <div class="select-option active" data-value="bell">
+                                        <i class="fas fa-bell"></i>
+                                        <span>Bell</span>
+                                    </div>
+                                    <div class="select-option" data-value="digital">
+                                        <i class="fas fa-clock"></i>
+                                        <span>Digital</span>
+                                    </div>
+                                    <div class="select-option" data-value="chime">
+                                        <i class="fas fa-music"></i>
+                                        <span>Chime</span>
+                                    </div>
+                                    <div class="select-option" data-value="beep">
+                                        <i class="fas fa-volume-up"></i>
+                                        <span>Beep</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div>
                             <label class="flex items-center space-x-3">
                                 <div class="relative inline-block w-10 mr-2 align-middle select-none">
@@ -347,12 +544,15 @@
                             </label>
                         </div>
                         
-                        
+                        <!-- Preview Sound Button -->
+                        <button id="preview-sound" class="preview-button">
+                            <i class="fas fa-play"></i> Preview Sound
+                        </button>
                     </div>
                 </div>
                 
                 <!-- Keyboard Shortcuts -->
-                <div class="glass-panel rounded-2xl p-6">
+                <div id="keyboard-shortcuts" class="glass-panel rounded-2xl p-6">
                     <h3 class="text-lg font-semibold mb-4">Keyboard Shortcuts</h3>
                     
                     <div class="space-y-2 text-sm">
@@ -417,7 +617,13 @@
         const stopwatchProgress = document.getElementById('stopwatch-progress');
         const soundToggle = document.getElementById('sound-toggle');
         const notificationToggle = document.getElementById('notification-toggle');
-        const alarmSoundSelect = document.getElementById('alarm-sound');
+        const previewSoundBtn = document.getElementById('preview-sound');
+        
+        // New dropdown elements
+        const selectHeader = document.querySelector('.select-header');
+        const selectOptions = document.querySelector('.select-options');
+        const options = document.querySelectorAll('.select-option');
+        const selectedOption = document.querySelector('.selected-text span');
         
         // State
         let alarms = [];
@@ -430,6 +636,7 @@
         let timerRemainingSeconds = 0;
         let stopwatchSeconds = 0;
         let draggingAlarm = null;
+        let currentAlarmSound = 'bell'; // Default alarm sound
         
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -438,6 +645,7 @@
             loadAlarms();
             setupDragAndDrop();
             setupKeyboardShortcuts();
+            setupDropdown();
             particlesJS.load('particles-js', {
                 "particles": {
                     "number": {
@@ -585,6 +793,62 @@
         stopwatchStart.addEventListener('click', startStopwatch);
         stopwatchPause.addEventListener('click', pauseStopwatch);
         stopwatchReset.addEventListener('click', resetStopwatch);
+        previewSoundBtn.addEventListener('click', previewAlarmSound);
+        
+        // New dropdown functions
+        function setupDropdown() {
+            // Toggle dropdown on header click
+            selectHeader.addEventListener('click', function(e) {
+                e.stopPropagation();
+                selectHeader.classList.toggle('open');
+                selectOptions.classList.toggle('open');
+            });
+            
+            // Select option
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    const value = this.getAttribute('data-value');
+                    const text = this.querySelector('span').textContent;
+                    
+                    // Update selected option
+                    selectedOption.textContent = text;
+                    currentAlarmSound = value;
+                    
+                    // Update active state
+                    options.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Close dropdown after selection
+                    selectHeader.classList.remove('open');
+                    selectOptions.classList.remove('open');
+                });
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!selectHeader.contains(event.target) && !selectOptions.contains(event.target)) {
+                    selectHeader.classList.remove('open');
+                    selectOptions.classList.remove('open');
+                }
+            });
+        }
+        
+        function previewAlarmSound() {
+            if (soundToggle.checked) {
+                const sound = document.getElementById(`alarm-sound-${currentAlarmSound}`);
+                sound.currentTime = 0;
+                sound.play();
+                
+                // Visual feedback
+                previewSoundBtn.innerHTML = `<i class="fas fa-volume-up"></i> Playing ${currentAlarmSound}...`;
+                previewSoundBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                
+                setTimeout(() => {
+                    previewSoundBtn.innerHTML = `<i class="fas fa-play"></i> Preview Sound`;
+                    previewSoundBtn.style.background = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
+                }, 1500);
+            }
+        }
         
         // Functions
         function toggleDarkMode() {
@@ -737,7 +1001,7 @@
         
         function triggerAlarm(alarm) {
             if (soundToggle.checked) {
-                const sound = document.getElementById(`alarm-sound-${alarmSoundSelect.value}`);
+                const sound = document.getElementById(`alarm-sound-${currentAlarmSound}`);
                 sound.currentTime = 0;
                 sound.play();
             }
@@ -840,7 +1104,7 @@
             timerPause.classList.add('hidden');
             
             if (soundToggle.checked) {
-                const sound = document.getElementById(`alarm-sound-${alarmSoundSelect.value}`);
+                const sound = document.getElementById(`alarm-sound-${currentAlarmSound}`);
                 sound.currentTime = 0;
                 sound.play();
             }

@@ -7,7 +7,6 @@ FocusFlow is a sleek productivity dashboard built with **React** that keeps the 
 - ⏳ **Animated Timer** — futuristic liquid-fill countdown effect.  
 - 🔍 **Smart Search** — expanding search bar with autocomplete animation.  
 - 🌙 **Dark Mode Toggle** — smooth sun ↔ moon morphing icon transition.  
-- 🎨 **Particle Background** — interactive particles that react to cursor movement.  
 - ⚡ **Keyboard Shortcuts** — quick actions with on-screen shortcut hints.  
 - 📱 **Responsive Design** — seamless transitions from mobile to desktop.  
 

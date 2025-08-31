@@ -3,18 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Focus Flow - Dream Scape</title>
+  <title>Focus FLow - Idea Board</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    .particle { position:absolute; border-radius:50%; pointer-events:none; z-index:0; }
-    .note { transition:transform .2s ease, box-shadow .2s ease; z-index:1; cursor:grab; transform-origin:center; position:absolute; }
-    .note:hover { transform:translateY(-2px); box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);}
-    .note.dragging { cursor:grabbing; transform:scale(1.05) translateY(-5px); box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 10px 10px -5px rgba(0,0,0,.04);}
-    .note.enlarged { transform:scale(1.2); z-index:10; }
-    .note-content { resize:none; background-color:transparent; }
-    .color-option { width:24px; height:24px; border-radius:50%; cursor:pointer; transition:transform .2s ease; }
-    .color-option:hover { transform:scale(1.2);}
+    .particle{position:absolute;border-radius:50%;pointer-events:none;z-index:0;}
+    .note{transition:transform .2s ease, box-shadow .2s ease; z-index:1; cursor:grab; transform-origin:center; position:absolute; overflow:hidden;}
+    .note:hover{transform:translateY(-2px); box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);}
+    .note.dragging{cursor:grabbing; transform:scale(1.05) translateY(-5px); box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 10px 10px -5px rgba(0,0,0,.04);}
+    .note.enlarged{transform:scale(1.2); z-index:10;}
+    .note-content{resize:none; background-color:transparent;}
+    .color-option{width:32px;height:32px;border-radius:6px;cursor:pointer;transition:transform .2s ease;}
+    .color-option:hover{transform:scale(1.15);}
+    .resize-handle{position:absolute; right:2px; bottom:2px; width:14px; height:14px; cursor:se-resize; background:rgba(0,0,0,.2); border-radius:3px;}
+    .dark .resize-handle{background:rgba(255,255,255,.3);}
     .dark-mode-toggle{transition:all .5s ease;}
     .dark .moon{transform:rotate(0deg);opacity:1;}
     .dark .sun{transform:rotate(90deg);opacity:0;}
@@ -28,7 +30,7 @@
   <div class="container mx-auto px-4 py-8 relative z-10">
     <header class="flex justify-between items-center mb-8">
       <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">
-        <span class="text-indigo-500">Dream</span><span class="text-pink-400">Scape</span>
+        <span class="text-indigo-500">Focus</span><span class="text-pink-400">Flow</span>
       </h1>
       <div class="flex items-center space-x-4">
         <button id="darkModeToggle" class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
@@ -43,19 +45,23 @@
 
     <div id="colorPalette" class="hidden mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
       <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Choose a color:</h3>
-      <div class="flex space-x-2">
+      <div class="flex flex-wrap gap-2">
+        <!-- Solid colors -->
         <div class="color-option bg-pink-200" data-color="bg-pink-200"></div>
         <div class="color-option bg-blue-200" data-color="bg-blue-200"></div>
         <div class="color-option bg-green-200" data-color="bg-green-200"></div>
         <div class="color-option bg-yellow-200" data-color="bg-yellow-200"></div>
         <div class="color-option bg-purple-200" data-color="bg-purple-200"></div>
         <div class="color-option bg-indigo-200" data-color="bg-indigo-200"></div>
+        <!-- Gradient colors -->
+        <div class="color-option bg-gradient-to-r from-pink-300 via-red-300 to-yellow-300" data-color="bg-gradient-to-r from-pink-300 via-red-300 to-yellow-300"></div>
+        <div class="color-option bg-gradient-to-r from-green-300 to-blue-400" data-color="bg-gradient-to-r from-green-300 to-blue-400"></div>
+        <div class="color-option bg-gradient-to-r from-purple-300 to-indigo-400" data-color="bg-gradient-to-r from-purple-300 to-indigo-400"></div>
+        <div class="color-option bg-gradient-to-r from-yellow-300 via-orange-300 to-red-400" data-color="bg-gradient-to-r from-yellow-300 via-orange-300 to-red-400"></div>
       </div>
     </div>
 
-    <!-- absolute container -->
-    <div id="board" class="min-h-[70vh] border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-4 relative overflow-hidden">
-    </div>
+    <div id="board" class="min-h-[70vh] border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-4 relative overflow-hidden"></div>
   </div>
 
 <script>
@@ -67,17 +73,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const body = document.body;
 
   let currentColor = "bg-pink-200";
-  let isDragging = false;
-  let currentNote = null, offsetX=0, offsetY=0;
+  let isDragging=false, currentNote=null, offsetX=0, offsetY=0;
+  let isResizing=false, resizeNote=null, startX=0, startY=0, startW=0, startH=0;
   let particles=[];
 
   createParticles(30);
   loadNotes();
 
-  addNoteBtn.addEventListener("click", () => {
+  addNoteBtn.addEventListener("click", ()=>{
     colorPalette.classList.toggle("hidden");
-    if (!colorPalette.classList.contains("hidden")) return;
-    createNote();
   });
 
   document.querySelectorAll(".color-option").forEach(opt=>{
@@ -89,13 +93,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function createNote(noteData=null){
-    const id = noteData?.id || Date.now().toString();
-    const note = document.createElement("div");
-    note.className=`note p-4 rounded-lg shadow-md ${noteData?.color||currentColor} dark:bg-opacity-80 w-48 h-48`;
+    const id=noteData?.id || Date.now().toString();
+    const note=document.createElement("div");
+    note.className=`note p-4 rounded-lg shadow-md ${noteData?.color||currentColor} dark:bg-opacity-80`;
     note.dataset.id=id;
 
-    note.style.left = (noteData?.x || 50) + "px";
-    note.style.top = (noteData?.y || 50) + "px";
+    note.style.left=(noteData?.x||50)+"px";
+    note.style.top=(noteData?.y||50)+"px";
+    note.style.width=(noteData?.width||200)+"px";
+    note.style.height=(noteData?.height||200)+"px";
 
     if(noteData?.enlarged) note.classList.add("enlarged");
 
@@ -105,28 +111,38 @@ document.addEventListener("DOMContentLoaded", () => {
       <button class="delete-note absolute top-1 right-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
         <i class="fas fa-times"></i>
       </button>
+      <div class="resize-handle"></div>
     `;
 
     note.querySelector(".delete-note").addEventListener("click",e=>{
       e.stopPropagation(); deleteNote(id);
     });
     note.addEventListener("click",e=>{
-      if(e.target.tagName!=="TEXTAREA" && !isDragging){
-        note.classList.toggle("enlarged");
-        saveNotes();
+      if(e.target.tagName!=="TEXTAREA" && !isDragging && !isResizing){
+        note.classList.toggle("enlarged"); saveNotes();
       }
     });
     note.addEventListener("mousedown", startDrag);
     note.querySelector("textarea").addEventListener("input", saveNotes);
+
+    // resize handle
+    note.querySelector(".resize-handle").addEventListener("mousedown",e=>{
+      e.stopPropagation();
+      isResizing=true;
+      resizeNote=note;
+      startX=e.clientX; startY=e.clientY;
+      startW=note.offsetWidth; startH=note.offsetHeight;
+      document.addEventListener("mousemove",resizeNoteMove);
+      document.addEventListener("mouseup",stopResize);
+    });
 
     board.appendChild(note);
     saveNotes();
   }
 
   function startDrag(e){
-    if(e.target.tagName==="TEXTAREA") return;
-    isDragging=true;
-    currentNote=e.currentTarget;
+    if(e.target.tagName==="TEXTAREA" || e.target.classList.contains("resize-handle")) return;
+    isDragging=true; currentNote=e.currentTarget;
     currentNote.classList.add("dragging");
     const rect=currentNote.getBoundingClientRect();
     const boardRect=board.getBoundingClientRect();
@@ -146,11 +162,25 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function stopDrag(){
     if(!isDragging) return;
-    isDragging=false;
-    currentNote.classList.remove("dragging");
+    isDragging=false; currentNote.classList.remove("dragging");
     currentNote.style.zIndex=1;
     document.removeEventListener("mousemove",dragNote);
     document.removeEventListener("mouseup",stopDrag);
+    saveNotes();
+  }
+
+  function resizeNoteMove(e){
+    if(!isResizing) return;
+    const dx=e.clientX-startX;
+    const dy=e.clientY-startY;
+    resizeNote.style.width=(startW+dx)+"px";
+    resizeNote.style.height=(startH+dy)+"px";
+  }
+  function stopResize(){
+    if(!isResizing) return;
+    isResizing=false;
+    document.removeEventListener("mousemove",resizeNoteMove);
+    document.removeEventListener("mouseup",stopResize);
     saveNotes();
   }
 
@@ -165,9 +195,11 @@ document.addEventListener("DOMContentLoaded", () => {
       notes.push({
         id:note.dataset.id,
         content:note.querySelector("textarea").value,
-        color:Array.from(note.classList).find(c=>c.startsWith("bg-")),
+        color:Array.from(note.classList).find(c=>c.startsWith("bg-")||c.startsWith("bg-gradient")),
         x:parseInt(note.style.left)||0,
         y:parseInt(note.style.top)||0,
+        width:parseInt(note.style.width)||200,
+        height:parseInt(note.style.height)||200,
         enlarged:note.classList.contains("enlarged")
       });
     });
@@ -191,13 +223,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function createParticles(count){
     const container=document.getElementById("particles");
     for(let i=0;i<count;i++){
-      const p=document.createElement("div");
-      p.className="particle";
+      const p=document.createElement("div"); p.className="particle";
       const size=Math.random()*10+5;
-      const x=Math.random()*window.innerWidth;
-      const y=Math.random()*window.innerHeight;
-      p.style.width=p.style.height=size+"px";
-      p.style.left=x+"px"; p.style.top=y+"px";
+      let x=Math.random()*window.innerWidth; let y=Math.random()*window.innerHeight;
+      p.style.width=p.style.height=size+"px"; p.style.left=x+"px"; p.style.top=y+"px";
       p.style.backgroundColor=`rgba(${150+Math.random()*100},${150+Math.random()*100},${150+Math.random()*100},${0.2+Math.random()*0.3})`;
       container.appendChild(p);
       particles.push({element:p,x,y,speedX:(Math.random()-0.5)*0.2,speedY:(Math.random()-0.5)*0.2});

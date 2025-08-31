@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimePulse | Futuristic Time Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease;
+            overflow-x: hidden;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+        
+        .dark .glass-panel {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .progress-ring {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        
+        .alarm-item {
+            transition: all 0.3s ease;
+        }
+        
+        .alarm-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+        
+        .alarm-item.placeholder {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            background: transparent;
+            height: 80px;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+        
+        .theme-toggle {
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            transform: rotate(30deg);
+        }
+        
+        .dark .theme-toggle {
+            transform: rotate(180deg);
+        }
+        
+        .dark .theme-toggle:hover {
+            transform: rotate(210deg);
+        }
+        
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .time-input::-webkit-inner-spin-button,
+        .time-input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        .time-input {
+            -moz-appearance: textfield;
+        }
+        
+        .slide-in {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .ring-animation {
+            animation: ring 1s ease infinite;
+        }
+        
+        @keyframes ring {
+            0% { transform: rotate(0); }
+            25% { transform: rotate(5deg); }
+            50% { transform: rotate(-5deg); }
+            75% { transform: rotate(5deg); }
+            100% { transform: rotate(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-gray-900 dark:to-gray-800 min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    <!-- Particles Background -->
+    <div id="particles-js"></div>
+    
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white">
+                    <i class="fas fa-clock text-xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-500 bg-clip-text text-transparent">TimePulse</h1>
+            </div>
+            
+            <button id="theme-toggle" class="theme-toggle w-10 h-10 rounded-full glass-panel flex items-center justify-center text-yellow-500 dark:text-gray-200">
+                <i class="fas fa-sun text-xl"></i>
+            </button>
+        </header>
+        
+        <!-- Main Dashboard -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column - Alarms -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Alarms Section -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold flex items-center space-x-2">
+                            <i class="fas fa-bell"></i>
+                            <span>Alarms</span>
+                        </h2>
+                        <button id="add-alarm-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105">
+                            <i class="fas fa-plus mr-1"></i> Add Alarm
+                        </button>
+                    </div>
+                    
+                    <div id="alarms-list" class="space-y-3">
+                        <!-- Alarms will be added here dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Timer/Stopwatch Tabs -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <div class="flex space-x-2 mb-6">
+                        <button id="timer-tab" class="tab-button active flex-1 py-2 px-4 rounded-lg bg-indigo-500 text-white font-medium">
+                            <i class="fas fa-hourglass-half mr-2"></i> Timer
+                        </button>
+                        <button id="stopwatch-tab" class="tab-button flex-1 py-2 px-4 rounded-lg bg-gray-200 dark:bg-gray-700 font-medium">
+                            <i class="fas fa-stopwatch mr-2"></i> Stopwatch
+                        </button>
+                    </div>
+                    
+                    <!-- Timer Content -->
+                    <div id="timer-content" class="space-y-6">
+                        <div class="flex justify-center">
+                            <div class="relative w-64 h-64">
+                                <svg class="w-full h-full" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" stroke-width="8" />
+                                    <circle id="timer-progress" class="progress-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#timer-gradient)" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="283" />
+                                    <defs>
+                                        <linearGradient id="timer-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#6366f1" />
+                                            <stop offset="100%" stop-color="#8b5cf6" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    <div id="timer-display" class="text-4xl font-bold">00:00:00</div>
+                                    <div class="text-sm opacity-70">Countdown Timer</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium mb-1">Hours</label>
+                                <input type="number" id="timer-hours" class="time-input w-full glass-panel rounded-lg px-4 py-2" min="0" max="23" value="0">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium mb-1">Minutes</label>
+                                <input type="number" id="timer-minutes" class="time-input w-full glass-panel rounded-lg px-4 py-2" min="0" max="59" value="0">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium mb-1">Seconds</label>
+                                <input type="number" id="timer-seconds" class="time-input w-full glass-panel rounded-lg px-4 py-2" min="0" max="59" value="0">
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3 justify-center">
+                            <button id="timer-start" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full font-medium transition-all duration-300 transform hover:scale-105">
+                                <i class="fas fa-play mr-1"></i> Start
+                            </button>
+                            <button id="timer-pause" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-full font-medium transition-all duration-300 transform hover:scale-105 hidden">
+                                <i class="fas fa-pause mr-1"></i> Pause
+                            </button>
+                            <button id="timer-reset" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full font-medium transition-all duration-300 transform hover:scale-105">
+                                <i class="fas fa-undo mr-1"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Stopwatch Content (Hidden by default) -->
+                    <div id="stopwatch-content" class="space-y-6 hidden">
+                        <div class="flex justify-center">
+                            <div class="relative w-64 h-64">
+                                <svg class="w-full h-full" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" stroke-width="8" />
+                                    <circle id="stopwatch-progress" class="progress-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#stopwatch-gradient)" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="283" />
+                                    <defs>
+                                        <linearGradient id="stopwatch-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#10b981" />
+                                            <stop offset="100%" stop-color="#3b82f6" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    <div id="stopwatch-display" class="text-4xl font-bold">00:00:00</div>
+                                    <div class="text-sm opacity-70">Stopwatch</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3 justify-center">
+                            <button id="stopwatch-start" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full font-medium transition-all duration-300 transform hover:scale-105">
+                                <i class="fas fa-play mr-1"></i> Start
+                            </button>
+                            <button id="stopwatch-pause" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-full font-medium transition-all duration-300 transform hover:scale-105 hidden">
+                                <i class="fas fa-pause mr-1"></i> Pause
+                            </button>
+                            <button id="stopwatch-reset" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full font-medium transition-all duration-300 transform hover:scale-105">
+                                <i class="fas fa-undo mr-1"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - Current Time and Settings -->
+            <div class="space-y-6">
+                <!-- Current Time -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <div class="flex flex-col items-center justify-center">
+                        <div id="current-date" class="text-lg font-medium mb-1">Monday, January 1</div>
+                        <div id="current-time" class="text-5xl font-bold mb-2">00:00:00</div>
+                        <div id="current-period" class="text-sm opacity-70">AM</div>
+                    </div>
+                </div>
+                
+                <!-- Add Alarm Modal (Hidden by default) -->
+                <div id="alarm-modal" class="glass-panel rounded-2xl p-6 hidden slide-in">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">Add New Alarm</h3>
+                        <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Alarm Time</label>
+                            <input type="time" id="alarm-time" class="w-full glass-panel rounded-lg px-4 py-2">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Label</label>
+                            <input type="text" id="alarm-label" class="w-full glass-panel rounded-lg px-4 py-2" placeholder="Wake up, Workout, etc.">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Color</label>
+                            <div class="flex space-x-2">
+                                <button data-color="indigo" class="color-option w-8 h-8 rounded-full bg-indigo-500 border-2 border-transparent hover:border-white"></button>
+                                <button data-color="red" class="color-option w-8 h-8 rounded-full bg-red-500 border-2 border-transparent hover:border-white"></button>
+                                <button data-color="green" class="color-option w-8 h-8 rounded-full bg-green-500 border-2 border-transparent hover:border-white"></button>
+                                <button data-color="yellow" class="color-option w-8 h-8 rounded-full bg-yellow-500 border-2 border-transparent hover:border-white"></button>
+                                <button data-color="purple" class="color-option w-8 h-8 rounded-full bg-purple-500 border-2 border-transparent hover:border-white"></button>
+                            </div>
+                        </div>
+                        
+                        <div class="pt-2">
+                            <button id="save-alarm" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-full font-medium transition-all duration-300 transform hover:scale-105">
+                                Save Alarm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Settings</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center space-x-3">
+                                <div class="relative inline-block w-10 mr-2 align-middle select-none">
+                                    <input type="checkbox" id="sound-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                                    <label for="sound-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                </div>
+                                <span class="text-sm font-medium">Alarm Sound</span>
+                            </label>
+                        </div>
+                        <div> <label class="block text-sm font-medium mb-1">Alarm Sound</label> <select id="alarm-sound" class="w-full glass-panel rounded-lg px-4 py-2"> <option value="bell">Bell</option> <option value="digital">Digital</option> <option value="chime">Chime</option> <option value="beep">Beep</option> </select> </div>
+                        <div>
+                            <label class="flex items-center space-x-3">
+                                <div class="relative inline-block w-10 mr-2 align-middle select-none">
+                                    <input type="checkbox" id="notification-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" checked/>
+                                    <label for="notification-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                </div>
+                                <span class="text-sm font-medium">Notifications</span>
+                            </label>
+                        </div>
+                        
+                        
+                    </div>
+                </div>
+                
+                <!-- Keyboard Shortcuts -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Keyboard Shortcuts</h3>
+                    
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span>Start/Pause Timer</span>
+                            <span class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">Space</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Reset Timer</span>
+                            <span class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">R</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Add Alarm</span>
+                            <span class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">A</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Toggle Dark Mode</span>
+                            <span class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">D</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Alarm Sound -->
+    <audio id="alarm-sound-bell" src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" preload="auto"></audio>
+    <audio id="alarm-sound-digital" src="https://assets.mixkit.co/sfx/preview/mixkit-digital-clock-digital-alarm-buzzer-992.mp3" preload="auto"></audio>
+    <audio id="alarm-sound-chime" src="https://assets.mixkit.co/sfx/preview/mixkit-morning-clock-alarm-1003.mp3" preload="auto"></audio>
+    <audio id="alarm-sound-beep" src="https://assets.mixkit.co/sfx/preview/mixkit-warning-alarm-buzzer-991.mp3" preload="auto"></audio>
+    
+    <script>
+        // DOM Elements
+        const themeToggle = document.getElementById('theme-toggle');
+        const addAlarmBtn = document.getElementById('add-alarm-btn');
+        const alarmsList = document.getElementById('alarms-list');
+        const alarmModal = document.getElementById('alarm-modal');
+        const closeModal = document.getElementById('close-modal');
+        const saveAlarm = document.getElementById('save-alarm');
+        const alarmTime = document.getElementById('alarm-time');
+        const alarmLabel = document.getElementById('alarm-label');
+        const colorOptions = document.querySelectorAll('.color-option');
+        const currentTime = document.getElementById('current-time');
+        const currentDate = document.getElementById('current-date');
+        const currentPeriod = document.getElementById('current-period');
+        const timerTab = document.getElementById('timer-tab');
+        const stopwatchTab = document.getElementById('stopwatch-tab');
+        const timerContent = document.getElementById('timer-content');
+        const stopwatchContent = document.getElementById('stopwatch-content');
+        const timerDisplay = document.getElementById('timer-display');
+        const stopwatchDisplay = document.getElementById('stopwatch-display');
+        const timerStart = document.getElementById('timer-start');
+        const timerPause = document.getElementById('timer-pause');
+        const timerReset = document.getElementById('timer-reset');
+        const stopwatchStart = document.getElementById('stopwatch-start');
+        const stopwatchPause = document.getElementById('stopwatch-pause');
+        const stopwatchReset = document.getElementById('stopwatch-reset');
+        const timerHours = document.getElementById('timer-hours');
+        const timerMinutes = document.getElementById('timer-minutes');
+        const timerSeconds = document.getElementById('timer-seconds');
+        const timerProgress = document.getElementById('timer-progress');
+        const stopwatchProgress = document.getElementById('stopwatch-progress');
+        const soundToggle = document.getElementById('sound-toggle');
+        const notificationToggle = document.getElementById('notification-toggle');
+        const alarmSoundSelect = document.getElementById('alarm-sound');
+        
+        // State
+        let alarms = [];
+        let selectedColor = 'indigo';
+        let timerInterval;
+        let stopwatchInterval;
+        let timerRunning = false;
+        let stopwatchRunning = false;
+        let timerTotalSeconds = 0;
+        let timerRemainingSeconds = 0;
+        let stopwatchSeconds = 0;
+        let draggingAlarm = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            loadAlarms();
+            setupDragAndDrop();
+            setupKeyboardShortcuts();
+            particlesJS.load('particles-js', {
+                "particles": {
+                    "number": {
+                        "value": 80,
+                        "density": {
+                            "enable": true,
+                            "value_area": 800
+                        }
+                    },
+                    "color": {
+                        "value": "#6366f1"
+                    },
+                    "shape": {
+                        "type": "circle",
+                        "stroke": {
+                            "width": 0,
+                            "color": "#000000"
+                        },
+                        "polygon": {
+                            "nb_sides": 5
+                        }
+                    },
+                    "opacity": {
+                        "value": 0.3,
+                        "random": false,
+                        "anim": {
+                            "enable": false,
+                            "speed": 1,
+                            "opacity_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "size": {
+                        "value": 3,
+                        "random": true,
+                        "anim": {
+                            "enable": false,
+                            "speed": 40,
+                            "size_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "line_linked": {
+                        "enable": true,
+                        "distance": 150,
+                        "color": "#6366f1",
+                        "opacity": 0.2,
+                        "width": 1
+                    },
+                    "move": {
+                        "enable": true,
+                        "speed": 2,
+                        "direction": "none",
+                        "random": false,
+                        "straight": false,
+                        "out_mode": "out",
+                        "bounce": false,
+                        "attract": {
+                            "enable": false,
+                            "rotateX": 600,
+                            "rotateY": 1200
+                        }
+                    }
+                },
+                "interactivity": {
+                    "detect_on": "canvas",
+                    "events": {
+                        "onhover": {
+                            "enable": true,
+                            "mode": "grab"
+                        },
+                        "onclick": {
+                            "enable": true,
+                            "mode": "push"
+                        },
+                        "resize": true
+                    },
+                    "modes": {
+                        "grab": {
+                            "distance": 140,
+                            "line_linked": {
+                                "opacity": 1
+                            }
+                        },
+                        "bubble": {
+                            "distance": 400,
+                            "size": 40,
+                            "duration": 2,
+                            "opacity": 8,
+                            "speed": 3
+                        },
+                        "repulse": {
+                            "distance": 200,
+                            "duration": 0.4
+                        },
+                        "push": {
+                            "particles_nb": 4
+                        },
+                        "remove": {
+                            "particles_nb": 2
+                        }
+                    }
+                },
+                "retina_detect": true
+            });
+        });
+        
+        // Event Listeners
+        themeToggle.addEventListener('click', toggleDarkMode);
+        addAlarmBtn.addEventListener('click', () => {
+            alarmModal.classList.remove('hidden');
+            alarmModal.classList.add('slide-in');
+        });
+        closeModal.addEventListener('click', () => alarmModal.classList.add('hidden'));
+        saveAlarm.addEventListener('click', saveNewAlarm);
+        colorOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                colorOptions.forEach(opt => opt.classList.remove('border-white', 'scale-110'));
+                option.classList.add('border-white', 'scale-110');
+                selectedColor = option.dataset.color;
+            });
+        });
+        
+        timerTab.addEventListener('click', () => {
+            timerTab.classList.add('active', 'bg-indigo-500', 'text-white');
+            timerTab.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+            stopwatchTab.classList.remove('active', 'bg-indigo-500', 'text-white');
+            stopwatchTab.classList.add('bg-gray-200', 'dark:bg-gray-700');
+            timerContent.classList.remove('hidden');
+            stopwatchContent.classList.add('hidden');
+        });
+        
+        stopwatchTab.addEventListener('click', () => {
+            stopwatchTab.classList.add('active', 'bg-indigo-500', 'text-white');
+            stopwatchTab.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+            timerTab.classList.remove('active', 'bg-indigo-500', 'text-white');
+            timerTab.classList.add('bg-gray-200', 'dark:bg-gray-700');
+            stopwatchContent.classList.remove('hidden');
+            timerContent.classList.add('hidden');
+        });
+        
+        timerStart.addEventListener('click', startTimer);
+        timerPause.addEventListener('click', pauseTimer);
+        timerReset.addEventListener('click', resetTimer);
+        stopwatchStart.addEventListener('click', startStopwatch);
+        stopwatchPause.addEventListener('click', pauseStopwatch);
+        stopwatchReset.addEventListener('click', resetStopwatch);
+        
+        // Functions
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        }
+        
+        function updateCurrentTime() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getHours();
+            const seconds = now.getSeconds();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const formattedHours = hours % 12 || 12;
+            
+            currentTime.textContent = `${String(formattedHours).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            currentPeriod.textContent = ampm;
+            
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            currentDate.textContent = now.toLocaleDateString(undefined, options);
+            
+            // Check alarms
+            checkAlarms(now);
+        }
+        
+        function loadAlarms() {
+            const savedAlarms = localStorage.getItem('alarms');
+            if (savedAlarms) {
+                alarms = JSON.parse(savedAlarms);
+                renderAlarms();
+            }
+        }
+        
+        function saveAlarms() {
+            localStorage.setItem('alarms', JSON.stringify(alarms));
+        }
+        
+        function renderAlarms() {
+            alarmsList.innerHTML = '';
+            
+            if (alarms.length === 0) {
+                alarmsList.innerHTML = `
+                    <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-bell-slash text-2xl mb-2"></i>
+                        <p>No alarms set</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            alarms.forEach((alarm, index) => {
+                const alarmTime = new Date(alarm.time);
+                const hours = alarmTime.getHours();
+                const minutes = alarmTime.getMinutes();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                const formattedHours = hours % 12 || 12;
+                
+                const alarmElement = document.createElement('div');
+                alarmElement.className = `alarm-item flex items-center justify-between p-4 rounded-xl bg-${alarm.color}-100 dark:bg-gray-700 border-l-4 border-${alarm.color}-500`;
+                alarmElement.dataset.index = index;
+                alarmElement.draggable = true;
+                
+                alarmElement.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-${alarm.color}-500 flex items-center justify-center text-white">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold">${alarm.label || 'Alarm'}</div>
+                            <div class="text-sm opacity-70">${String(formattedHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" ${alarm.active ? 'checked' : ''}>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-${alarm.color}-500"></div>
+                        </label>
+                        <button class="text-gray-500 hover:text-red-500">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                const toggle = alarmElement.querySelector('input[type="checkbox"]');
+                const deleteBtn = alarmElement.querySelector('button');
+                
+                toggle.addEventListener('change', () => {
+                    alarms[index].active = toggle.checked;
+                    saveAlarms();
+                });
+                
+                deleteBtn.addEventListener('click', () => {
+                    alarms.splice(index, 1);
+                    saveAlarms();
+                    renderAlarms();
+                });
+                
+                alarmsList.appendChild(alarmElement);
+            });
+        }
+        
+        function saveNewAlarm() {
+            const timeValue = alarmTime.value;
+            const labelValue = alarmLabel.value.trim() || 'Alarm';
+            
+            if (!timeValue) {
+                alert('Please set a time for the alarm');
+                return;
+            }
+            
+            const [hours, minutes] = timeValue.split(':').map(Number);
+            const alarmTimeObj = new Date();
+            alarmTimeObj.setHours(hours, minutes, 0, 0);
+            
+            alarms.push({
+                time: alarmTimeObj.toISOString(),
+                label: labelValue,
+                color: selectedColor,
+                active: true
+            });
+            
+            saveAlarms();
+            renderAlarms();
+            alarmModal.classList.add('hidden');
+            alarmTime.value = '';
+            alarmLabel.value = '';
+            
+            // Reset color selection
+            colorOptions.forEach(opt => opt.classList.remove('border-white', 'scale-110'));
+            colorOptions[0].classList.add('border-white', 'scale-110');
+            selectedColor = 'indigo';
+        }
+        
+        function checkAlarms(now) {
+            alarms.forEach((alarm, index) => {
+                if (!alarm.active) return;
+                
+                const alarmTime = new Date(alarm.time);
+                const currentTime = new Date(now);
+                
+                // Compare hours and minutes only
+                if (alarmTime.getHours() === currentTime.getHours() && 
+                    alarmTime.getMinutes() === currentTime.getMinutes() &&
+                    currentTime.getSeconds() === 0) {
+                    
+                    triggerAlarm(alarm);
+                }
+            });
+        }
+        
+        function triggerAlarm(alarm) {
+            if (soundToggle.checked) {
+                const sound = document.getElementById(`alarm-sound-${alarmSoundSelect.value}`);
+                sound.currentTime = 0;
+                sound.play();
+            }
+            
+            if (notificationToggle.checked) {
+                if (Notification.permission === 'granted') {
+                    new Notification(`TimePulse Alarm: ${alarm.label}`, {
+                        body: `It's time for ${alarm.label}!`,
+                        icon: 'https://cdn-icons-png.flaticon.com/512/2088/2088165.png'
+                    });
+                } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            new Notification(`TimePulse Alarm: ${alarm.label}`, {
+                                body: `It's time for ${alarm.label}!`,
+                                icon: 'https://cdn-icons-png.flaticon.com/512/2088/2088165.png'
+                            });
+                        }
+                    });
+                }
+            }
+            
+            // Highlight the alarm in the list
+            const alarmElements = document.querySelectorAll('.alarm-item');
+            alarmElements.forEach(el => {
+                if (el.querySelector('.font-semibold').textContent === alarm.label) {
+                    el.classList.add('ring-animation', 'ring-2', `ring-${alarm.color}-500`);
+                    setTimeout(() => {
+                        el.classList.remove('ring-animation', 'ring-2', `ring-${alarm.color}-500`);
+                    }, 5000);
+                }
+            });
+        }
+        
+        function startTimer() {
+            const hours = parseInt(timerHours.value) || 0;
+            const minutes = parseInt(timerMinutes.value) || 0;
+            const seconds = parseInt(timerSeconds.value) || 0;
+            
+            timerTotalSeconds = hours * 3600 + minutes * 60 + seconds;
+            timerRemainingSeconds = timerTotalSeconds;
+            
+            if (timerRemainingSeconds <= 0) {
+                alert('Please set a valid time');
+                return;
+            }
+            
+            updateTimerDisplay();
+            timerStart.classList.add('hidden');
+            timerPause.classList.remove('hidden');
+            timerRunning = true;
+            
+            timerInterval = setInterval(() => {
+                timerRemainingSeconds--;
+                updateTimerDisplay();
+                
+                if (timerRemainingSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    timerRunning = false;
+                    timerComplete();
+                }
+            }, 1000);
+        }
+        
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            timerStart.classList.remove('hidden');
+            timerPause.classList.add('hidden');
+        }
+        
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            timerRemainingSeconds = 0;
+            updateTimerDisplay();
+            timerStart.classList.remove('hidden');
+            timerPause.classList.add('hidden');
+            
+            // Reset progress ring
+            const circumference = 2 * Math.PI * 45;
+            timerProgress.style.strokeDashoffset = circumference;
+        }
+        
+        function updateTimerDisplay() {
+            const hours = Math.floor(timerRemainingSeconds / 3600);
+            const minutes = Math.floor((timerRemainingSeconds % 3600) / 60);
+            const seconds = timerRemainingSeconds % 60;
+            
+            timerDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            // Update progress ring
+            const circumference = 2 * Math.PI * 45;
+            const offset = circumference - (timerRemainingSeconds / timerTotalSeconds) * circumference;
+            timerProgress.style.strokeDashoffset = offset;
+        }
+        
+        function timerComplete() {
+            timerStart.classList.remove('hidden');
+            timerPause.classList.add('hidden');
+            
+            if (soundToggle.checked) {
+                const sound = document.getElementById(`alarm-sound-${alarmSoundSelect.value}`);
+                sound.currentTime = 0;
+                sound.play();
+            }
+            
+            if (notificationToggle.checked) {
+                if (Notification.permission === 'granted') {
+                    new Notification('TimePulse Timer Complete', {
+                        body: 'Your timer has finished!',
+                        icon: 'https://cdn-icons-png.flaticon.com/512/2088/2088165.png'
+                    });
+                } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            new Notification('TimePulse Timer Complete', {
+                                body: 'Your timer has finished!',
+                                icon: 'https://cdn-icons-png.flaticon.com/512/2088/2088165.png'
+                            });
+                        }
+                    });
+                }
+            }
+            
+            // Pulse animation
+            timerDisplay.parentElement.parentElement.classList.add('pulse');
+            setTimeout(() => {
+                timerDisplay.parentElement.parentElement.classList.remove('pulse');
+            }, 3000);
+        }
+        
+        function startStopwatch() {
+            stopwatchStart.classList.add('hidden');
+            stopwatchPause.classList.remove('hidden');
+            stopwatchRunning = true;
+            
+            const startTime = Date.now() - (stopwatchSeconds * 1000);
+            
+            stopwatchInterval = setInterval(() => {
+                stopwatchSeconds = Math.floor((Date.now() - startTime) / 1000);
+                updateStopwatchDisplay();
+            }, 1000);
+        }
+        
+        function pauseStopwatch() {
+            clearInterval(stopwatchInterval);
+            stopwatchRunning = false;
+            stopwatchStart.classList.remove('hidden');
+            stopwatchPause.classList.add('hidden');
+        }
+        
+        function resetStopwatch() {
+            clearInterval(stopwatchInterval);
+            stopwatchRunning = false;
+            stopwatchSeconds = 0;
+            updateStopwatchDisplay();
+            stopwatchStart.classList.remove('hidden');
+            stopwatchPause.classList.add('hidden');
+            
+            // Reset progress ring
+            const circumference = 2 * Math.PI * 45;
+            stopwatchProgress.style.strokeDashoffset = circumference;
+        }
+        
+        function updateStopwatchDisplay() {
+            const hours = Math.floor(stopwatchSeconds / 3600);
+            const minutes = Math.floor((stopwatchSeconds % 3600) / 60);
+            const seconds = stopwatchSeconds % 60;
+            
+            stopwatchDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            // Update progress ring (every minute)
+            if (stopwatchSeconds % 60 === 0) {
+                const circumference = 2 * Math.PI * 45;
+                const offset = circumference - (stopwatchSeconds % 3600 / 3600) * circumference;
+                stopwatchProgress.style.strokeDashoffset = offset;
+            }
+        }
+        
+        function setupDragAndDrop() {
+            alarmsList.addEventListener('dragstart', e => {
+                if (e.target.classList.contains('alarm-item')) {
+                    draggingAlarm = e.target;
+                    e.target.classList.add('dragging');
+                    setTimeout(() => {
+                        e.target.classList.add('invisible');
+                    }, 0);
+                }
+            });
+            
+            alarmsList.addEventListener('dragend', e => {
+                if (e.target.classList.contains('alarm-item')) {
+                    e.target.classList.remove('dragging', 'invisible');
+                    draggingAlarm = null;
+                }
+            });
+            
+            alarmsList.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(e.clientY);
+                const dragging = document.querySelector('.dragging');
+                
+                if (!dragging || !afterElement) return;
+                
+                if (afterElement.element) {
+                    alarmsList.insertBefore(dragging, afterElement.element);
+                } else {
+                    alarmsList.appendChild(dragging);
+                }
+                
+                // Update alarms array
+                const fromIndex = parseInt(dragging.dataset.index);
+                const toIndex = afterElement.index;
+                
+                if (fromIndex !== toIndex) {
+                    const [movedAlarm] = alarms.splice(fromIndex, 1);
+                    alarms.splice(toIndex, 0, movedAlarm);
+                    saveAlarms();
+                    
+                    // Update data-index attributes
+                    document.querySelectorAll('.alarm-item').forEach((el, idx) => {
+                        el.dataset.index = idx;
+                    });
+                }
+            });
+            
+            function getDragAfterElement(y) {
+                const draggableElements = [...document.querySelectorAll('.alarm-item:not(.dragging)')];
+                
+                return draggableElements.reduce((closest, child, index) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child, index: index };
+                    } else if (offset >= 0 && (closest.element === null || offset < closest.offset)) {
+                        return { offset: offset, element: null, index: index + 1 };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY, element: null, index: 0 });
+            }
+        }
+        
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', e => {
+                // Don't trigger if typing in an input
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                
+                switch (e.key.toLowerCase()) {
+                    case ' ':
+                        // Space - start/pause timer or stopwatch
+                        if (!timerContent.classList.contains('hidden')) {
+                            if (timerRunning) {
+                                pauseTimer();
+                            } else {
+                                startTimer();
+                            }
+                        } else {
+                            if (stopwatchRunning) {
+                                pauseStopwatch();
+                            } else {
+                                startStopwatch();
+                            }
+                        }
+                        break;
+                    case 'r':
+                        // R - reset timer or stopwatch
+                        if (!timerContent.classList.contains('hidden')) {
+                            resetTimer();
+                        } else {
+                            resetStopwatch();
+                        }
+                        break;
+                    case 'a':
+                        // A - add alarm
+                        alarmModal.classList.remove('hidden');
+                        alarmModal.classList.add('slide-in');
+                        break;
+                    case 'd':
+                        // D - toggle dark mode
+                        toggleDarkMode();
+                        break;
+                }
+            });
+        }
+    </script>
+</body>
+</html>

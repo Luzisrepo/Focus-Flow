@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FocusFlow | Futuristic Productivity Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+  <script src="https://unpkg.com/tsparticles@2.0.5/tsparticles.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f9fafb;
+      transition: background-color 0.5s ease;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    html, body {
+      scroll-behavior: smooth;
+    }
+    
+    .glassmorphism {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+    }
+    
+    .dark .glassmorphism {
+      background: rgba(17, 24, 39, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .liquid-fill {
+      position: relative;
+      overflow: hidden;
+      border-radius: 50%;
+    }
+    
+    .liquid-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #a5b4fc, #818cf8);
+      border-radius: 50%;
+      transform: translateY(100%);
+      transition: transform 0.3s ease-out;
+    }
+    
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    
+    .task-card {
+      transform-style: preserve-3d;
+      transition: all 0.5s ease;
+    }
+    
+    .task-card:hover {
+      transform: translateY(-5px) rotateX(5deg);
+    }
+    
+    .search-bar {
+      transition: all 0.3s ease;
+    }
+    
+    .search-bar:focus-within {
+      transform: scale(1.02);
+      box-shadow: 0 10px 25px -5px rgba(165, 180, 252, 0.2);
+    }
+    
+    .view-transition {
+      perspective: 1000px;
+    }
+    
+    .kanban-column {
+      min-height: 500px;
+    }
+    
+    @keyframes morph {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    
+    .animate-morph {
+      animation: morph 2s infinite;
+    }
+    
+    .dark {
+      background-color: #111827;
+      color: #f3f4f6;
+    }
+    
+    .dark .glassmorphism {
+      background: rgba(31, 41, 55, 0.85);
+    }
+    
+    /* Navbar Styles */
+    nav.nav-primary {
+      position: fixed;
+      width: fit-content;
+      inset-inline: 0px;
+      margin: auto;
+      margin-top: 30px;
+      padding: 0 30px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.5);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.1),
+        0 4px 16px rgba(0, 0, 0, 0.05);
+      z-index: 50;
+    }
+
+    .dark nav.nav-primary {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    nav.nav-primary:before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      backdrop-filter: url(#wave-distort);
+    }
+
+    nav.nav-primary > ul {   
+      position: relative;
+      list-style: none;
+      display: flex;
+      justify-content: center;
+      height: 55px;
+      isolation: isolate;
+      padding: 0 15px;
+    }
+    
+    nav.nav-primary > ul::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 6px;
+      width: 12px;
+      height: 12px;
+      background: white;
+      border-radius: 50%;
+      transform: translateX(var(--translate-x, 0)) translateY(var(--translate-y, 0)) rotate(var(--rotate-x, 0deg));
+      transition: none;
+      opacity: 0;
+      z-index: -1;
+      box-shadow: 
+        0 4px 16px rgba(255, 255, 255, 0.4),
+        0 2px 8px rgba(255, 255, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+    
+    .dark nav.nav-primary > ul::after {
+      background: #4f46e5;
+      box-shadow: 
+        0 4px 16px rgba(99, 102, 241, 0.4),
+        0 2px 8px rgba(99, 102, 241, 0.3),
+        inset 0 1px 0 rgba(79, 70, 229, 0.8),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.6);
+    }
+    
+    nav.nav-primary > ul li,
+    nav.nav-primary > ul li a {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #1a1a1a;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.95rem;
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    .dark nav.nav-primary > ul li,
+    .dark nav.nav-primary > ul li a {
+      color: #e5e7eb;
+    }
+    
+    nav.nav-primary > ul li a {
+      padding-inline: 20px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    nav.nav-primary > ul li a:hover {
+      color: #000000;
+      transform: translateY(-2px);
+    }
+    
+    .dark nav.nav-primary > ul li a:hover {
+      color: #ffffff;
+    }
+    
+    nav.nav-primary > ul li a:focus {
+      outline: none;
+    }
+    
+    nav.nav-primary > ul li a.active {
+      color: #000000;
+      transform: translateY(-2px);
+    }
+    
+    .dark nav.nav-primary > ul li a.active {
+      color: #ffffff;
+    }
+    
+    nav.nav-primary > ul.show-indicator::after {
+      opacity: 1;
+    }
+    
+    nav.nav-primary > ul li a:active {
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body class="transition-colors duration-300">
+  <!-- Navigation Bar -->
+  <header>
+    <nav class="nav-primary">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="board.html">Board</a></li>
+        <li><a href="timepulse.html">TimePulse</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <svg style="display: none">
+    <defs>
+      <filter id="wave-distort" x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.0038 0.0038"
+          numOctaves="1"
+          seed="2"
+          result="roughNoise"
+        />
+        <feGaussianBlur in="roughNoise" stdDeviation="8.5" result="softNoise" />
+        <feComposite
+          operator="arithmetic"
+          k1="0"
+          k2="1"
+          k3="2"
+          k4="0"
+          in="softNoise"
+          result="mergedMap"
+        />
+        <feDisplacementMap
+          in="SourceGraphic"
+          in2="mergedMap"
+          scale="-42"
+          xChannelSelector="G"
+          yChannelSelector="G"
+        />
+      </filter>
+    </defs>
+  </svg>
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    const { motion, AnimatePresence, useAnimation, useMotionValue, useTransform, animate } = window.Motion;
+    const { tsParticles } = window;
+
+    const FocusFlow = () => {
+      const [darkMode, setDarkMode] = useState(true);
+      const [activeView, setActiveView] = useState('grid');
+      const [searchQuery, setSearchQuery] = useState('');
+      const [timerRunning, setTimerRunning] = useState(false);
+      const [timerSeconds, setTimerSeconds] = useState(1500); // 25 minutes
+      const [tasks, setTasks] = useState([
+        { id: 1, title: 'Complete project proposal', status: 'todo', note: 'Due by Friday' },
+        { id: 2, title: 'Review design mockups', status: 'in-progress', note: 'Feedback needed' },
+        { id: 3, title: 'Schedule team meeting', status: 'done', note: 'Include remote members' },
+        { id: 4, title: 'Update documentation', status: 'todo', note: 'API changes' },
+      ]);
+      const [notes, setNotes] = useState([
+        { id: 1, content: 'Discuss new feature roadmap with team', color: 'bg-blue-100' },
+        { id: 2, content: 'Research performance optimization techniques', color: 'bg-purple-100' },
+      ]);
+      const [suggestions, setSuggestions] = useState([]);
+      const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+      const [draggedTask, setDraggedTask] = useState(null);
+      
+      const particlesInit = async (engine) => {
+        await tsParticles.load(engine, {
+          particles: {
+            number: {
+              value: 30,
+              density: {
+                enable: true,
+                value_area: 800
+              }
+            },
+            color: {
+              value: darkMode ? "#a5b4fc" : "#818cf8"
+            },
+            shape: {
+              type: "circle",
+              stroke: {
+                width: 0,
+                color: "#000000"
+              },
+              polygon: {
+                nb_sides: 5
+              }
+            },
+            opacity: {
+              value: 0.3,
+              random: true,
+              anim: {
+                enable: true,
+                speed: 1,
+                opacity_min: 0.1,
+                sync: false
+              }
+            },
+            size: {
+              value: 3,
+              random: true,
+              anim: {
+                enable: true,
+                speed: 2,
+                size_min: 0.1,
+                sync: false
+              }
+            },
+            line_linked: {
+              enable: true,
+              distance: 150,
+              color: darkMode ? "#a5b4fc" : "#818cf8",
+              opacity: 0.2,
+              width: 1
+            },
+            move: {
+              enable: true,
+              speed: 1,
+              direction: "none",
+              random: true,
+              straight: false,
+              out_mode: "out",
+              bounce: false,
+              attract: {
+                enable: true,
+                rotateX: 600,
+                rotateY: 1200
+              }
+            }
+          },
+          interactivity: {
+            detect_on: "canvas",
+            events: {
+              onhover: {
+                enable: true,
+                mode: "grab"
+              },
+              onclick: {
+                enable: true,
+                mode: "push"
+              },
+              resize: true
+            },
+            modes: {
+              grab: {
+                distance: 140,
+                line_linked: {
+                  opacity: 0.5
+                }
+              },
+              push: {
+                particles_nb: 4
+              }
+            }
+          },
+          retina_detect: true
+        });
+      };
+
+      useEffect(() => {
+        particlesInit(tsParticles);
+        
+        if (darkMode) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }, [darkMode]);
+
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          // Toggle dark mode with Ctrl+D
+          if (e.ctrlKey && e.key === 'd') {
+            setDarkMode(!darkMode);
+          }
+          
+          // Show shortcut help with Ctrl+/
+          if (e.ctrlKey && e.key === '/') {
+            setShowShortcutHelp(true);
+            setTimeout(() => setShowShortcutHelp(false), 2000);
+          }
+          
+          // Start/stop timer with Space
+          if (e.key === ' ') {
+            setTimerRunning(!timerRunning);
+          }
+        };
+        
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [darkMode, timerRunning]);
+
+      useEffect(() => {
+        let interval;
+        if (timerRunning && timerSeconds > 0) {
+          interval = setInterval(() => {
+            setTimerSeconds(prev => prev - 1);
+          }, 1000);
+        } else if (timerSeconds === 0) {
+          setTimerRunning(false);
+        }
+        return () => clearInterval(interval);
+      }, [timerRunning, timerSeconds]);
+
+      const handleSearch = (e) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+        
+        if (query.length > 0) {
+          const filtered = [...tasks, ...notes].filter(item => 
+            item.title?.toLowerCase().includes(query.toLowerCase()) || 
+            item.content?.toLowerCase().includes(query.toLowerCase())
+          );
+          setSuggestions(filtered);
+        } else {
+          setSuggestions([]);
+        }
+      };
+
+      const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      };
+
+      const handleDragStart = (e, task) => {
+        setDraggedTask(task);
+        e.dataTransfer.setData('text/plain', task.id);
+        e.dataTransfer.effectAllowed = 'move';
+      };
+
+      const handleDragOver = (e, status) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      };
+
+      const handleDrop = (e, status) => {
+        e.preventDefault();
+        if (draggedTask && draggedTask.status !== status) {
+          setTasks(tasks.map(task => 
+            task.id === draggedTask.id ? { ...task, status } : task
+          ));
+        }
+        setDraggedTask(null);
+      };
+
+      const addTask = () => {
+        const newTask = {
+          id: Date.now(),
+          title: 'New Task',
+          status: 'todo',
+          note: ''
+        };
+        setTasks([...tasks, newTask]);
+      };
+
+      const addNote = () => {
+        const colors = ['bg-blue-100', 'bg-purple-100', 'bg-pink-100', 'bg-green-100'];
+        const newNote = {
+          id: Date.now(),
+          content: 'New note...',
+          color: colors[Math.floor(Math.random() * colors.length)]
+        };
+        setNotes([...notes, newNote]);
+      };
+
+      const updateTask = (id, updates) => {
+        setTasks(tasks.map(task => 
+          task.id === id ? { ...task, ...updates } : task
+        ));
+      };
+
+      const updateNote = (id, content) => {
+        setNotes(notes.map(note => 
+          note.id === id ? { ...note, content } : note
+        ));
+      };
+
+      const deleteTask = (id) => {
+        setTasks(tasks.filter(task => task.id !== id));
+      };
+
+      const deleteNote = (id) => {
+        setNotes(notes.filter(note => note.id !== id));
+      };
+
+      const resetTimer = () => {
+        setTimerRunning(false);
+        setTimerSeconds(1500);
+      };
+
+      const progress = 100 - (timerSeconds / 1500 * 100);
+
+      return (
+        <div className={`min-h-screen p-4 md:p-8 ${darkMode ? 'dark' : ''}`} style={{ paddingTop: '100px' }}>
+          <div className="particles" id="tsparticles"></div>
+          
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-7xl mx-auto"
+          >
+            {/* Header */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+              <motion.div 
+                whileHover={{ scale: 1.02 }}
+                className="flex items-center gap-2"
+              >
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                  className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500"
+                />
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">FocusFlow</h1>
+              </motion.div>
+              
+              <div className="flex items-center gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setDarkMode(!darkMode)}
+                  className="p-2 rounded-full bg-white dark:bg-gray-800 shadow-sm"
+                >
+                  {darkMode ? (
+                    <motion.svg
+                      key="moon"
+                      initial={{ scale: 0.5 }}
+                      animate={{ scale: 1 }}
+                      className="w-5 h-5 text-yellow-300"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </motion.svg>
+                  ) : (
+                    <motion.svg
+                      key="sun"
+                      initial={{ scale: 0.5 }}
+                      animate={{ scale: 1 }}
+                      className="w-5 h-5 text-yellow-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </motion.svg>
+                  )}
+                </motion.button>
+                
+                <div className="relative">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowShortcutHelp(!showShortcutHelp)}
+                    className="p-2 rounded-full bg-white dark:bg-gray-800 shadow-sm"
+                  >
+                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </motion.button>
+                  
+                  <AnimatePresence>
+                    {showShortcutHelp && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 z-50"
+                      >
+                        <h3 className="font-semibold mb-2 text-gray-800 dark:text-white">Keyboard Shortcuts</h3>
+                        <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                          <li className="flex justify-between">
+                            <span>Toggle Dark Mode</span>
+                            <span className="font-mono bg-gray-100 dark:bg-gray-700 px-2 rounded">Ctrl + D</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>Start/Stop Timer</span>
+                            <span className="font-mono bg-gray-100 dark:bg-gray-700 px-2 rounded">Space</span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span>Show Help</span>
+                            <span className="font-mono bg-gray-100 dark:bg-gray-700 px-2 rounded">Ctrl + /</span>
+                          </li>
+                        </ul>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </header>
+            
+            {/* Main Content */}
+            <main className="space-y-8">
+              {/* Timer Section */}
+              <motion.section 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="glassmorphism rounded-2xl p-6 shadow-sm"
+              >
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-20 h-20">
+                      <motion.div 
+                        className="w-full h-full rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center shadow-inner"
+                        animate={{ scale: timerRunning ? [1, 1.02, 1] : 1 }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-xl font-semibold text-gray-800 dark:text-white">
+                            {formatTime(timerSeconds)}
+                          </span>
+                        </div>
+                        <div 
+                          className="liquid-fill w-full h-full"
+                          style={{ '--progress': `${progress}%` }}
+                        ></div>
+                      </motion.div>
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Focus Timer</h2>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        {timerRunning ? 'Focusing...' : 'Ready to focus'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setTimerRunning(!timerRunning)}
+                      className={`px-4 py-2 rounded-lg font-medium ${timerRunning ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-200' : 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-200'}`}
+                    >
+                      {timerRunning ? 'Pause' : 'Start'}
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={resetTimer}
+                      className="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                    >
+                      Reset
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.section>
+              
+              {/* Search and View Toggle */}
+              <div className="flex flex-col md:flex-row gap-4">
+                <motion.div 
+                  className="flex-1"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <div className="search-bar relative">
+                    <input
+                      type="text"
+                      placeholder="Search tasks and notes..."
+                      value={searchQuery}
+                      onChange={handleSearch}
+                      className="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <svg className="absolute right-3 top-3.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    
+                    {suggestions.length > 0 && (
+                      <motion.ul 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-auto"
+                      >
+                        {suggestions.map(item => (
+                          <motion.li 
+                            key={item.id}
+                            whileHover={{ backgroundColor: darkMode ? 'rgba(55, 65, 81, 0.5)' : 'rgba(243, 244, 246, 0.5)' }}
+                            className="px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                            onClick={() => {
+                              setSearchQuery(item.title || item.content);
+                              setSuggestions([]);
+                            }}
+                          >
+                            <p className="text-gray-800 dark:text-white">{item.title || item.content}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {item.title ? 'Task' : 'Note'}
+                            </p>
+                          </motion.li>
+                        ))}
+                      </motion.ul>
+                    )}
+                  </div>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-700"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setActiveView('grid')}
+                    className={`px-3 py-1.5 rounded-md text-sm ${activeView === 'grid' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200' : 'text-gray-600 dark:text-gray-300'}`}
+                  >
+                    Grid
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setActiveView('list')}
+                    className={`px-3 py-1.5 rounded-md text-sm ${activeView === 'list' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200' : 'text-gray-600 dark:text-gray-300'}`}
+                  >
+                    List
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setActiveView('kanban')}
+                    className={`px-3 py-1.5 rounded-md text-sm ${activeView === 'kanban' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200' : 'text-gray-600 dark:text-gray-300'}`}
+                  >
+                    Kanban
+                  </motion.button>
+                </motion.div>
+              </div>
+              
+              {/* Tasks and Notes Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Tasks */}
+                <motion.section 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="lg:col-span-2 space-y-4"
+                >
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Tasks</h2>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={addTask}
+                      className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-sm flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add Task
+                    </motion.button>
+                  </div>
+                  
+                  <AnimatePresence mode="wait">
+                    {activeView === 'grid' && (
+                      <motion.div
+                        key="grid-view"
+                        initial={{ opacity: 0, rotateX: 90 }}
+                        animate={{ opacity: 1, rotateX: 0 }}
+                        exit={{ opacity: 0, rotateX: 90 }}
+                        transition={{ duration: 0.3 }}
+                        className="grid grid-cols-1 sm:grid-cols-2 gap-4 view-transition"
+                      >
+                        {tasks.filter(task => 
+                          task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          task.note.toLowerCase().includes(searchQuery.toLowerCase())
+                        ).map(task => (
+                          <motion.div
+                            key={task.id}
+                            layoutId={`task-${task.id}`}
+                            whileHover={{ y: -5, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}
+                            className="task-card glassmorphism rounded-xl p-4 cursor-move"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, task)}
+                          >
+                            <div className="flex justify-between items-start">
+                              <input
+                                type="text"
+                                value={task.title}
+                                onChange={(e) => updateTask(task.id, { title: e.target.value })}
+                                className="w-full bg-transparent font-medium text-gray-800 dark:text-white focus:outline-none mb-2"
+                              />
+                              <button
+                                onClick={() => deleteTask(task.id)}
+                                className="text-gray-400 hover:text-red-500"
+                              >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                            <textarea
+                              value={task.note}
+                              onChange={(e) => updateTask(task.id, { note: e.target.value })}
+                              placeholder="Add details..."
+                              className="w-full bg-transparent text-sm text-gray-600 dark:text-gray-300 focus:outline-none resize-none"
+                              rows="2"
+                            />
+                            <div className="mt-2 flex justify-between items-center">
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                task.status === 'todo' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' :
+                                task.status === 'in-progress' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200' :
+                                'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-200'
+                              }`}>
+                                {task.status.replace('-', ' ')}
+                              </span>
+                              <motion.div
+                                whileHover={{ scale: 1.1 }}
+                                className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500"
+                              />
+                            </div>
+                          </motion.div>
+                        ))}
+                      </motion.div>
+                    )}
+                    
+                    {activeView === 'list' && (
+                      <motion.div
+                        key="list-view"
+                        initial={{ opacity: 0, rotateX: 90 }}
+                        animate={{ opacity: 1, rotateX: 0 }}
+                        exit={{ opacity: 0, rotateX: 90 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-3 view-transition"
+                      >
+                        {tasks.filter(task => 
+                          task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          task.note.toLowerCase().includes(searchQuery.toLowerCase())
+                        ).map(task => (
+                          <motion.div
+                            key={task.id}
+                            layoutId={`task-${task.id}`}
+                            whileHover={{ x: 5 }}
+                            className="task-card glassmorphism rounded-lg p-4 cursor-move"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, task)}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <input
+                                  type="text"
+                                  value={task.title}
+                                  onChange={(e) => updateTask(task.id, { title: e.target.value })}
+                                  className="w-full bg-transparent font-medium text-gray-800 dark:text-white focus:outline-none mb-1"
+                                />
+                                <textarea
+                                  value={task.note}
+                                  onChange={(e) => updateTask(task.id, { note: e.target.value })}
+                                  placeholder="Add details..."
+                                  className="w-full bg-transparent text-sm text-gray-600 dark:text-gray-300 focus:outline-none resize-none"
+                                  rows="1"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  task.status === 'todo' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' :
+                                  task.status === 'in-progress' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200' :
+                                  'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-200'
+                                }`}>
+                                  {task.status.replace('-', ' ')}
+                                </span>
+                                <button
+                                  onClick={() => deleteTask(task.id)}
+                                  className="text-gray-400 hover:text-red-500"
+                                >
+                                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </motion.div>
+                    )}
+                    
+                    {activeView === 'kanban' && (
+                      <motion.div
+                        key="kanban-view"
+                        initial={{ opacity: 0, rotateX: 90 }}
+                        animate={{ opacity: 1, rotateX: 0 }}
+                        exit={{ opacity: 0, rotateX: 90 }}
+                        transition={{ duration: 0.3 }}
+                        className="grid grid-cols-1 sm:grid-cols-3 gap-4 view-transition"
+                      >
+                        {['todo', 'in-progress', 'done'].map(status => (
+                          <motion.div
+                            key={status}
+                            onDragOver={(e) => handleDragOver(e, status)}
+                            onDrop={(e) => handleDrop(e, status)}
+                            className="kanban-column glassmorphism rounded-xl p-4"
+                          >
+                            <h3 className="font-medium text-gray-800 dark:text-white mb-3 capitalize">
+                              {status.replace('-', ' ')}
+                            </h3>
+                            <div className="space-y-3">
+                              {tasks.filter(task => 
+                                task.status === status && (
+                                  task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                  task.note.toLowerCase().includes(searchQuery.toLowerCase())
+                                )
+                              ).map(task => (
+                                <motion.div
+                                  key={task.id}
+                                  layoutId={`task-${task.id}`}
+                                  whileHover={{ scale: 1.02 }}
+                                  className="task-card bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm cursor-move"
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, task)}
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <input
+                                      type="text"
+                                      value={task.title}
+                                      onChange={(e) => updateTask(task.id, { title: e.target.value })}
+                                      className="w-full bg-transparent font-medium text-gray-800 dark:text-white focus:outline-none mb-1 text-sm"
+                                    />
+                                    <button
+                                      onClick={() => deleteTask(task.id)}
+                                      className="text-gray-400 hover:text-red-500"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                  <textarea
+                                    value={task.note}
+                                    onChange={(e) => updateTask(task.id, { note: e.target.value })}
+                                    placeholder="Add details..."
+                                    className="w-full bg-transparent text-xs text-gray-600 dark:text-gray-300 focus:outline-none resize-none"
+                                    rows="1"
+                                  />
+                                </motion.div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.section>
+                
+                {/* Notes */}
+                <motion.section 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="space-y-4"
+                >
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Notes</h2>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={addNote}
+                      className="px-3 py-1.5 bg-purple-500 text-white rounded-lg text-sm flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add Note
+                    </motion.button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {notes.filter(note => 
+                      note.content.toLowerCase().includes(searchQuery.toLowerCase())
+                    ).map(note => (
+                      <motion.div
+                        key={note.id}
+                        whileHover={{ scale: 1.02 }}
+                        className={`${note.color} dark:bg-opacity-20 rounded-xl p-4 shadow-sm`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <textarea
+                            value={note.content}
+                            onChange={(e) => updateNote(note.id, e.target.value)}
+                            className="w-full bg-transparent text-gray-800 dark:text-white focus:outline-none resize-none"
+                            rows="3"
+                          />
+                          <button
+                            onClick={() => deleteNote(note.id)}
+                            className="text-gray-400 hover:text-red-500"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="mt-2 flex justify-end">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(note.id).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.section>
+              </div>
+            </main>
+            
+            {/* Footer */}
+            <motion.footer 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400"
+            >
+              <p>FocusFlow © {new Date().getFullYear()} — Minimal productivity for maximum focus, made by ._rayzz</p>
+            </motion.footer>
+          </motion.div>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<FocusFlow />);
+  </script>
+
+  <!-- Navbar JavaScript -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const nav = document.querySelector('nav.nav-primary > ul');
+      const items = document.querySelectorAll('nav.nav-primary > ul li a');
+      let anim = null;
+      let currentActiveItem = null;
+
+      const animate = (from, to) => {
+        if (anim) clearInterval(anim);
+
+        const start = Date.now();
+        anim = setInterval(() => {
+          const p = Math.min((Date.now() - start) / 500, 1);
+          const e = 1 - Math.pow(1 - p, 3);
+
+          const x = from + (to - from) * e;
+          const y = -40 * (4 * e * (1 - e));
+          const r = 200 * Math.sin(p * Math.PI);
+
+          nav.style.setProperty('--translate-x', `${x}px`);
+          nav.style.setProperty('--translate-y', `${y}px`);
+          nav.style.setProperty('--rotate-x', `${r}deg`);
+
+          if (p >= 1) {
+            clearInterval(anim);
+            anim = null;
+            nav.style.setProperty('--translate-y', '0px');
+            nav.style.setProperty('--rotate-x', '0deg');
+          }
+        }, 16);
+      };
+
+      const getCurrentPosition = () => parseFloat(nav.style.getPropertyValue('--translate-x')) || 0;
+
+      const getItemCenter = (item) => {
+        return item.getBoundingClientRect().left + item.offsetWidth / 2 - nav.getBoundingClientRect().left - 5;
+      };
+
+      const moveToItem = (item) => {
+        const current = getCurrentPosition();
+        const center = getItemCenter(item);
+        animate(current, center);
+        nav.classList.add('show-indicator');
+      };
+
+      const setActiveItem = (item) => {
+        if (currentActiveItem) {
+          currentActiveItem.classList.remove('active');
+        }
+
+        currentActiveItem = item;
+        item.classList.add('active');
+        moveToItem(item);
+      };
+
+      const handleMouseLeave = () => {
+        if (currentActiveItem) {
+          moveToItem(currentActiveItem);
+        } else {
+          nav.classList.remove('show-indicator');
+          if (anim) clearInterval(anim);
+        }
+      };
+
+      items.forEach(item => {
+        item.addEventListener('mouseenter', () => moveToItem(item));
+        item.addEventListener('mouseleave', handleMouseLeave);
+        item.addEventListener('click', () => setActiveItem(item));
+      });
+
+      nav.addEventListener('mouseleave', handleMouseLeave);
+      
+      if (items.length > 0) {
+        setTimeout(() => {
+          setActiveItem(items[0]);
+        }, 100);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -245,9 +245,223 @@
     nav.nav-primary > ul li a:active {
       transform: translateY(-2px);
     }
+
+    /* Loading Screen Styles */
+    #load {
+      position: fixed;
+      width: 600px;
+      height: 36px;
+      left: 50%;
+      top: 40%;
+      margin-left: -300px;
+      overflow: visible;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      cursor: default;
+      z-index: 9999;
+    }
+
+    #load div {
+      position: absolute;
+      width: 20px;
+      height: 36px;
+      opacity: 0;
+      font-family: Helvetica, Arial, sans-serif;
+      animation: move 2s linear infinite;
+      -o-animation: move 2s linear infinite;
+      -moz-animation: move 2s linear infinite;
+      -webkit-animation: move 2s linear infinite;
+      transform: rotate(180deg);
+      -o-transform: rotate(180deg);
+      -moz-transform: rotate(180deg);
+      -webkit-transform: rotate(180deg);
+      color: #35C4F0;
+    }
+
+    #load div:nth-child(2) {
+      animation-delay: 0.2s;
+      -o-animation-delay: 0.2s;
+      -moz-animation-delay: 0.2s;
+      -webkit-animation-delay: 0.2s;
+    }
+    #load div:nth-child(3) {
+      animation-delay: 0.4s;
+      -o-animation-delay: 0.4s;
+      -webkit-animation-delay: 0.4s;
+      -webkit-animation-delay: 0.4s;
+    }
+    #load div:nth-child(4) {
+      animation-delay: 0.6s;
+      -o-animation-delay: 0.6s;
+      -moz-animation-delay: 0.6s;
+      -webkit-animation-delay: 0.6s;
+    }
+    #load div:nth-child(5) {
+      animation-delay: 0.8s;
+      -o-animation-delay: 0.8s;
+      -moz-animation-delay: 0.8s;
+      -webkit-animation-delay: 0.8s;
+    }
+    #load div:nth-child(6) {
+      animation-delay: 1s;
+      -o-animation-delay: 1s;
+      -moz-animation-delay: 1s;
+      -webkit-animation-delay: 1s;
+    }
+    #load div:nth-child(7) {
+      animation-delay: 1.2s;
+      -o-animation-delay: 1.2s;
+      -moz-animation-delay: 1.2s;
+      -webkit-animation-delay: 1.2s;
+    }
+
+    @keyframes move {
+      0% {
+        left: 0;
+        opacity: 0;
+      }
+      35% {
+        left: 41%; 
+        -moz-transform: rotate(0deg);
+        -webkit-transform: rotate(0deg);
+        -o-transform: rotate(0deg);
+        transform: rotate(0deg);
+        opacity: 1;
+      }
+      65% {
+        left: 59%; 
+        -moz-transform: rotate(0deg); 
+        -webkit-transform: rotate(0deg); 
+        -o-transform: rotate(0deg);
+        transform: rotate(0deg); 
+        opacity: 1;
+      }
+      100% {
+        left: 100%; 
+        -moz-transform: rotate(-180deg); 
+        -webkit-transform: rotate(-180deg); 
+        -o-transform: rotate(-180deg); 
+        transform: rotate(-180deg);
+        opacity: 0;
+      }
+    }
+
+    @-moz-keyframes move {
+      0% {
+        left: 0; 
+        opacity: 0;
+      }
+      35% {
+        left: 41%; 
+        -moz-transform: rotate(0deg); 
+        transform: rotate(0deg);
+        opacity: 1;
+      }
+      65% {
+        left: 59%; 
+        -moz-transform: rotate(0deg); 
+        transform: rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        left: 100%; 
+        -moz-transform: rotate(-180deg); 
+        transform: rotate(-180deg);
+        opacity: 0;
+      }
+    }
+
+    @-webkit-keyframes move {
+      0% {
+        left: 0; 
+        opacity: 0;
+      }
+      35% {
+        left: 41%; 
+        -webkit-transform: rotate(0deg); 
+        transform: rotate(0deg); 
+        opacity: 1;
+      }
+      65% {
+        left: 59%; 
+        -webkit-transform: rotate(0deg); 
+        transform: rotate(0deg); 
+        opacity: 1;
+      }
+      100% {
+        left: 100%;
+        -webkit-transform: rotate(-180deg); 
+        transform: rotate(-180deg); 
+        opacity: 0;
+      }
+    }
+
+    @-o-keyframes move {
+      0% {
+        left: 0; 
+        opacity: 0;
+      }
+      35% {
+        left: 41%; 
+        -o-transform: rotate(0deg); 
+        transform: rotate(0deg); 
+        opacity: 1;
+      }
+      65% {
+        left: 59%; 
+        -o-transform: rotate(0deg); 
+        transform: rotate(0deg); 
+        opacity: 1;
+      }
+      100% {
+        left: 100%; 
+        -o-transform: rotate(-180deg); 
+        transform: rotate(-180deg); 
+        opacity: 0;
+      }
+    }
+
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9998;
+      transition: opacity 0.5s ease-out;
+    }
+
+    .content-hidden {
+      opacity: 0;
+      transition: opacity 0.5s ease-in;
+    }
   </style>
 </head>
+<script>
+  setTimeout(function() {
+    window.location.href = "home.html"; // change this to your target URL
+  }, 4000); // 4000ms = 4 seconds
+</script>
 <body class="transition-colors duration-300">
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <div id="load">
+      <div>G</div>
+      <div>N</div>
+      <div>I</div>
+      <div>D</div>
+      <div>A</div>
+      <div>O</div>
+      <div>L</div>
+    </div>
+  </div>
+
   <!-- Navigation Bar -->
   <header>
     <nav class="nav-primary">
@@ -584,7 +798,7 @@
                       animate={{ scale: 1 }}
                       className="w-5 h-5 text-yellow-300"
                       fill="none"
-                      viewBox="0 0 24 24"
+                      viewBox="极 0 24 24"
                       stroke="currentColor"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
@@ -597,9 +811,9 @@
                       className="w-5 h-5 text-yellow-500"
                       fill="none"
                       viewBox="0 0 24 24"
-                      stroke="currentColor"
+                      stroke="极 currentColor"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 极 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                     </motion.svg>
                   )}
                 </motion.button>
@@ -609,7 +823,7 @@
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setShowShortcutHelp(!showShortcutHelp)}
-                    className="p-2 rounded-full bg-white dark:bg-gray-800 shadow-sm"
+                   极 className="p-2 rounded-full bg-white dark:bg-gray-800 shadow-sm"
                   >
                     <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -625,14 +839,14 @@
                         className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 z-50"
                       >
                         <h3 className="font-semibold mb-2 text-gray-800 dark:text-white">Keyboard Shortcuts</h3>
-                        <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                        <ul className="space-y-1极 text-sm text-gray-600 dark:text-gray-300">
                           <li className="flex justify-between">
                             <span>Toggle Dark Mode</span>
                             <span className="font-mono bg-gray-100 dark:bg-gray-700 px-2 rounded">Ctrl + D</span>
                           </li>
                           <li className="flex justify-between">
                             <span>Start/Stop Timer</span>
-                            <span className="font-mono bg-gray-100 dark:bg-gray-700 px-2 rounded">Space</span>
+                            <span className="font-mono bg-gray-极 100 dark:bg-gray-700 px-2 rounded">Space</span>
                           </li>
                           <li className="flex justify-between">
                             <span>Show Help</span>
@@ -656,7 +870,7 @@
                 className="glassmorphism rounded-2xl p-6 shadow-sm"
               >
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="flex items-center gap-4">
+                  <div className="极 flex items-center gap-4">
                     <div className="relative w-20 h-20">
                       <motion.div 
                         className="w-full h-full rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center shadow-inner"
@@ -720,7 +934,7 @@
                       className="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                     <svg className="absolute right-3 top-3.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      <path stroke极 Linecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 极 21l-6-6m2-5a7 7 极 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     
                     {suggestions.length > 0 && (
@@ -754,7 +968,7 @@
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-700"
+                  className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-1 shadow-sm border border-gray-200极 dark:border-gray-700"
                 >
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -765,7 +979,7 @@
                     Grid
                   </motion.button>
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 极 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setActiveView('list')}
                     className={`px-3 py-1.5 rounded-md text-sm ${activeView === 'list' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200' : 'text-gray-600 dark:text-gray-300'}`}
@@ -798,7 +1012,7 @@
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={addTask}
-                      className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-sm flex items-center gap-1"
+                      className="px-3极 py-1.5 bg-blue-500 text-white rounded-lg极 text-sm flex items-center gap-1"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -840,8 +1054,8 @@
                                 onClick={() => deleteTask(task.id)}
                                 className="text-gray-400 hover:text-red-500"
                               >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                <svg className="w极-5 h-5" fill="none" view极 Box="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1极 h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                               </button>
                             </div>
@@ -886,10 +1100,10 @@
                           <motion.div
                             key={task.id}
                             layoutId={`task-${task.id}`}
-                            whileHover={{ x: 5 }}
+                            while极 Hover={{ x: 5 }}
                             className="task-card glassmorphism rounded-lg p-4 cursor-move"
                             draggable
-                            onDragStart={(e) => handleDragStart(e, task)}
+                            onDragStart={(极 e) => handleDragStart(e, task)}
                           >
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
@@ -909,7 +1123,7 @@
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className={`text-xs px-2 py-1 rounded-full ${
-                                  task.status === 'todo' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' :
+                                  task.status === 'todo' ? 'bg-gray-100 text-gray-600 dark:bg极-gray-700 dark:text-gray-300' :
                                   task.status === 'in-progress' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200' :
                                   'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-200'
                                 }`}>
@@ -920,7 +1134,7 @@
                                   className="text-gray-400 hover:text-red-500"
                                 >
                                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7极 m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-极 1 1v3M4 7h16" />
                                   </svg>
                                 </button>
                               </div>
@@ -972,12 +1186,12 @@
                                       className="w-full bg-transparent font-medium text-gray-800 dark:text-white focus:outline-none mb-1 text-sm"
                                     />
                                     <button
-                                      onClick={() => deleteTask(task.id)}
+                                      onClick={() => delete极 Task(task.id)}
                                       className="text-gray-400 hover:text-red-500"
                                     >
                                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                      </svg>
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6极 v6m1-10V4a1 1 0 00-1-1h-4a1 1 极 0 00-1 1v3M4 7h16" />
+                                      </极 svg>
                                     </button>
                                   </div>
                                   <textarea
@@ -1005,7 +1219,7 @@
                   className="space-y-4"
                 >
                   <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Notes</h2>
+                    <h2 className="text-xl font-semibold text极-gray-800 dark:text-white">Notes</h2>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -1032,7 +1246,7 @@
                           <textarea
                             value={note.content}
                             onChange={(e) => updateNote(note.id, e.target.value)}
-                            className="w-full bg-transparent text-gray-800 dark:text-white focus:outline-none resize-none"
+                            className="w-full bg-transparent text-gray-800 dark:text-white focus:极 outline-none resize-none"
                             rows="3"
                           />
                           <button
@@ -1087,7 +1301,7 @@
 
         const start = Date.now();
         anim = setInterval(() => {
-          const p = Math.min((Date.now() - start) / 500, 1);
+          const p = Math.min((Date.now极() - start) / 500, 1);
           const e = 1 - Math.pow(1 - p, 3);
 
           const x = from + (to - from) * e;
@@ -1113,7 +1327,7 @@
         return item.getBoundingClientRect().left + item.offsetWidth / 2 - nav.getBoundingClientRect().left - 5;
       };
 
-      const moveToItem = (item) => {
+      const move极 ToItem = (item) => {
         const current = getCurrentPosition();
         const center = getItemCenter(item);
         animate(current, center);
@@ -1152,6 +1366,21 @@
           setActiveItem(items[0]);
         }, 100);
       }
+    });
+  </script>
+
+  <!-- Loading Screen Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const loadingScreen = document.getElementById('loadingScreen');
+      
+      // Hide the loading screen after 4 seconds
+      setTimeout(function() {
+        loadingScreen.style.opacity = '0';
+        setTimeout(function() {
+          loadingScreen.style.display = 'none';
+        }, 500); // Match the transition duration
+      }, 4000);
     });
   </script>
 </body>

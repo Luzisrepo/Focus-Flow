@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowCalendar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.0.6/tsparticles.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            100: '#E1F5FE',
+                            200: '#B3E5FC',
+                            300: '#81D4FA',
+                            400: '#4FC3F7',
+                            500: '#29B6F6',
+                            600: '#039BE5',
+                            700: '#0288D1',
+                            800: '#0277BD',
+                            900: '#01579B',
+                        },
+                        secondary: {
+                            100: '#F8BBD0',
+                            200: '#F48FB1',
+                            300: '#F06292',
+                            400: '#EC407A',
+                            500: '#E91E63',
+                            600: '#D81B60',
+                            700: '#C2185B',
+                            800: '#AD1457',
+                            900: '#880E4F',
+                        },
+                    },
+                    animation: {
+                        'slide-in': 'slideIn 0.3s ease-out forwards',
+                        'slide-out': 'slideOut 0.3s ease-out forwards',
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                        'scale-up': 'scaleUp 0.2s ease-out forwards',
+                    },
+                    keyframes: {
+                        slideIn: {
+                            '0%': { transform: 'translateX(100%)', opacity: '0' },
+                            '100%': { transform: 'translateX(0)', opacity: '1' },
+                        },
+                        slideOut: {
+                            '0%': { transform: 'translateX(0)', opacity: '1' },
+                            '100%': { transform: 'translateX(100%)', opacity: '0' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        scaleUp: {
+                            '0%': { transform: 'scale(0.95)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' },
+                        },
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        .calendar-day {
+            transition: all 0.2s ease;
+        }
+        .calendar-day:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .event-item {
+            transition: all 0.2s ease;
+        }
+        .event-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .dark .calendar-day {
+            background-color: #2d3748;
+        }
+        .dark .calendar-day:hover {
+            background-color: #4a5568;
+        }
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        .week-view {
+            display: grid;
+            grid-template-columns: 60px repeat(7, 1fr);
+            grid-template-rows: auto;
+            gap: 2px;
+        }
+        .week-day-header {
+            text-align: center;
+            padding: 10px 0;
+            font-weight: 500;
+        }
+        .week-time-slot {
+            height: 60px;
+            border-bottom: 1px solid #e2e8f0;
+            position: relative;
+        }
+        .dark .week-time-slot {
+            border-bottom: 1px solid #4a5568;
+        }
+        .week-day-cell {
+            border-left: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            position: relative;
+        }
+        .dark .week-day-cell {
+            border-left: 1px solid #4a5568;
+            border-bottom: 1px solid #4a5568;
+        }
+        .day-view {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            grid-template-rows: auto;
+            gap: 2px;
+        }
+        .day-time-slot {
+            height: 60px;
+            border-bottom: 1px solid #e2e8f0;
+            position: relative;
+        }
+        .dark .day-time-slot {
+            border-bottom: 1px solid #4a5568;
+        }
+        .day-hour-cell {
+            border-left: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            position: relative;
+        }
+        .dark .day-hour-cell {
+            border-left: 1px solid #4a5568;
+            border-bottom: 1px solid #4a5568;
+        }
+        .event-pill {
+            position: absolute;
+            border-radius: 4px;
+            padding: 2px 4px;
+            font-size: 12px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            z-index: 1;
+        }
+        .current-time-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background-color: #E91E63;
+            z-index: 2;
+        }
+        .current-time-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #E91E63;
+            z-index: 3;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen transition-colors duration-300">
+    <div id="particles-js"></div>
+    
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-primary-600 dark:text-primary-400">FlowCalendar</h1>
+                <p class="text-gray-500 dark:text-gray-400">Your minimal productivity companion</p>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <button id="todayBtn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors">
+                    Today
+                </button>
+                
+                <button id="darkModeToggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-yellow-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                    <i data-feather="moon" class="dark:hidden"></i>
+                    <i data-feather="sun" class="hidden dark:block"></i>
+                </button>
+                
+                <div class="relative">
+                    <button id="viewToggle" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center">
+                        <span id="currentView">Month</span>
+                        <i data-feather="chevron-down" class="ml-2 w-4 h-4"></i>
+                    </button>
+                    <div id="viewDropdown" class="hidden absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10">
+                        <a href="#" class="view-option block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" data-view="month">Month</a>
+                        <a href="#" class="view-option block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" data-view="week">Week</a>
+                        <a href="#" class="view-option block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" data-view="day">Day</a>
+                    </div>
+                </div>
+                
+                <button id="addEventBtn" class="px-4 py-2 bg-secondary-500 hover:bg-secondary-600 text-white rounded-lg transition-colors flex items-center">
+                    <i data-feather="plus" class="mr-2 w-4 h-4"></i>
+                    Add Event
+                </button>
+            </div>
+        </header>
+        
+        <!-- Calendar Navigation -->
+        <div class="flex justify-between items-center mb-6">
+            <button id="prevBtn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                <i data-feather="chevron-left"></i>
+            </button>
+            
+            <h2 id="currentPeriod" class="text-xl font-semibold">January 2023</h2>
+            
+            <button id="nextBtn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                <i data-feather="chevron-right"></i>
+            </button>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Calendar Container -->
+            <div id="calendarContainer" class="flex-1">
+                <!-- Calendar views will be rendered here -->
+            </div>
+            
+            <!-- Task Sidebar -->
+            <div class="lg:w-80 bg-white dark:bg-gray-800 rounded-lg shadow p-4 h-fit">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">Quick Tasks</h3>
+                    <button id="addTaskBtn" class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                        <i data-feather="plus"></i>
+                    </button>
+                </div>
+                
+                <div id="taskList" class="space-y-2">
+                    <!-- Tasks will be populated by JavaScript -->
+                    <div class="text-gray-500 dark:text-gray-400 text-center py-4">No tasks yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Event Modal -->
+    <div id="eventModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md animate-scale-up">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="eventModalTitle" class="text-xl font-semibold">Add New Event</h3>
+                <button id="closeEventModal" class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+            
+            <form id="eventForm" class="space-y-4">
+                <input type="hidden" id="eventId">
+                
+                <div>
+                    <label for="eventTitle" class="block text-sm font-medium mb-1">Title *</label>
+                    <input type="text" id="eventTitle" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700">
+                </div>
+                
+                <div>
+                    <label for="eventDescription" class="block text-sm font-medium mb-1">Description</label>
+                    <textarea id="eventDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="eventStartDate" class="block text-sm font-medium mb-1">Start Date *</label>
+                        <input type="date" id="eventStartDate" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700">
+                    </div>
+                    
+                    <div>
+                        <label for="eventStartTime" class="block text-sm font-medium mb-1">Start Time</label>
+                        <input type="time" id="eventStartTime" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="eventEndDate" class="block text-sm font-medium mb-1">End Date</label>
+                        <input type="date" id="eventEndDate" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700">
+                    </div>
+                    
+                    <div>
+                        <label for="eventEndTime" class="block text-sm font-medium mb-1">End Time</label>
+                        <input type="time" id="eventEndTime" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">Color</label>
+                    <div class="flex space-x-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="eventColor" value="primary-500" class="sr-only" checked>
+                            <span class="w-6 h-6 rounded-full bg-primary-500 border-2 border-transparent peer-checked:border-gray-800 dark:peer-checked:border-white"></span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="eventColor" value="secondary-500" class="sr-only">
+                            <span class="w-6 h-6 rounded-full bg-secondary-500 border-2 border-transparent peer-checked:border-gray-800 dark:peer-checked:border-white"></span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="eventColor" value="green-500" class="sr-only">
+                            <span class="w-6 h-6 rounded-full bg-green-500 border-2 border-transparent peer-checked:border-gray-800 dark:peer-checked:border-white"></span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="eventColor" value="yellow-500" class="sr-only">
+                            <span class="w-6 h-6 rounded-full bg-yellow-500 border-2 border-transparent peer-checked:border-gray-800 dark:peer-checked:border-white"></span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="eventColor" value="purple-500" class="sr-only">
+                            <span class="w-6 h-6 rounded-full bg-purple-500 border-2 border-transparent peer-checked:border-gray-800 dark:peer-checked:border-white"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="eventAllDay" class="rounded text-primary-600 focus:ring-primary-500 dark:bg-gray-700">
+                        <span class="ml-2 text-sm">All Day Event</span>
+                    </label>
+                </div>
+                
+                <div class="flex justify-between pt-4">
+                    <button type="button" id="deleteEvent" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors hidden">
+                        Delete
+                    </button>
+                    <div class="flex space-x-3">
+                        <button type="button" id="cancelEvent" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-md transition-colors">
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Task Modal -->
+    <div id="taskModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md animate-scale-up">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="taskModalTitle" class="text-xl font-semibold">Add New Task</h3>
+                <button id="closeTaskModal" class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+            
+            <form id="taskForm" class="space-y-4">
+                <input type="hidden" id="taskId">
+                
+                <div>
+                    <label for="taskTitle" class="block text-sm font-medium mb-1">Task *</label>
+                    <input type="text" id="taskTitle" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700">
+                </div>
+                
+                <div>
+                    <label for="taskDueDate" class="block text-sm font-medium mb-1">Due Date</label>
+                    <input type="date" id="taskDueDate" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700">
+                </div>
+                
+                <div class="flex justify-between pt-4">
+                    <button type="button" id="deleteTask" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors hidden">
+                        Delete
+                    </button>
+                    <div class="flex space-x-3">
+                        <button type="button" id="cancelTask" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-md transition-colors">
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Feather Icons
+            feather.replace();
+            
+            // Initialize particles.js
+            tsParticles.load("particles-js", {
+                particles: {
+                    number: {
+                        value: 80,
+                        density: {
+                            enable: true,
+                            value_area: 800
+                        }
+                    },
+                    color: {
+                        value: "#3B82F6"
+                    },
+                    shape: {
+                        type: "circle",
+                        stroke: {
+                            width: 0,
+                            color: "#000000"
+                        },
+                        polygon: {
+                            nb_sides: 5
+                        }
+                    },
+                    opacity: {
+                        value: 0.5,
+                        random: false,
+                        anim: {
+                            enable: false,
+                            speed: 1,
+                            opacity_min: 0.1,
+                            sync: false
+                        }
+                    },
+                    size: {
+                        value: 3,
+                        random: true,
+                        anim: {
+                            enable: false,
+                            speed: 40,
+                            size_min: 0.1,
+                            sync: false
+                        }
+                    },
+                    line_linked: {
+                        enable: true,
+                        distance: 150,
+                        color: "#3B82F6",
+                        opacity: 0.4,
+                        width: 1
+                    },
+                    move: {
+                        enable: true,
+                        speed: 2,
+                        direction: "none",
+                        random: false,
+                        straight: false,
+                        out_mode: "out",
+                        bounce: false,
+                        attract: {
+                            enable: false,
+                            rotateX: 600,
+                            rotateY: 1200
+                        }
+                    }
+                },
+                interactivity: {
+                    detect_on: "canvas",
+                    events: {
+                        onhover: {
+                            enable: true,
+                            mode: "grab"
+                        },
+                        onclick: {
+                            enable: true,
+                            mode: "push"
+                        },
+                        resize: true
+                    },
+                    modes: {
+                        grab: {
+                            distance: 140,
+                            line_linked: {
+                                opacity: 1
+                            }
+                        },
+                        bubble: {
+                            distance: 400,
+                            size: 40,
+                            duration: 2,
+                            opacity: 8,
+                            speed: 3
+                        },
+                        repulse: {
+                            distance: 200,
+                            duration: 0.4
+                        },
+                        push: {
+                            particles_nb: 4
+                        },
+                        remove: {
+                            particles_nb: 2
+                        }
+                    }
+                },
+                retina_detect: true
+            });
+            
+            // Calendar functionality
+            let currentDate = new Date();
+            let currentView = 'month'; // 'month', 'week', or 'day'
+            let events = [];
+            let tasks = [];
+            
+            // UI Elements
+            const calendarContainer = document.getElementById('calendarContainer');
+            const currentPeriod = document.getElementById('currentPeriod');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const todayBtn = document.getElementById('todayBtn');
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const viewToggle = document.getElementById('viewToggle');
+            const viewDropdown = document.getElementById('viewDropdown');
+            const currentViewElement = document.getElementById('currentView');
+            const addEventBtn = document.getElementById('addEventBtn');
+            const addTaskBtn = document.getElementById('addTaskBtn');
+            const taskList = document.getElementById('taskList');
+            
+            // Modal elements
+            const eventModal = document.getElementById('eventModal');
+            const eventModalTitle = document.getElementById('eventModalTitle');
+            const closeEventModal = document.getElementById('closeEventModal');
+            const eventForm = document.getElementById('eventForm');
+            const cancelEvent = document.getElementById('cancelEvent');
+            const deleteEventBtn = document.getElementById('deleteEvent');
+            
+            const taskModal = document.getElementById('taskModal');
+            const taskModalTitle = document.getElementById('taskModalTitle');
+            const closeTaskModal = document.getElementById('closeTaskModal');
+            const taskForm = document.getElementById('taskForm');
+            const cancelTask = document.getElementById('cancelTask');
+            const deleteTaskBtn = document.getElementById('deleteTask');
+            
+            // Initialize calendar
+            loadData();
+            renderCalendar();
+            startClock();
+            
+            // Event listeners
+            prevBtn.addEventListener('click', () => {
+                navigatePeriod(-1);
+            });
+            
+            nextBtn.addEventListener('click', () => {
+                navigatePeriod(1);
+            });
+            
+            todayBtn.addEventListener('click', () => {
+                currentDate = new Date();
+                renderCalendar();
+            });
+            
+            viewToggle.addEventListener('click', () => {
+                viewDropdown.classList.toggle('hidden');
+            });
+            
+            document.querySelectorAll('.view-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    currentView = option.getAttribute('data-view');
+                    currentViewElement.textContent = option.textContent;
+                    viewDropdown.classList.add('hidden');
+                    renderCalendar();
+                });
+            });
+            
+            darkModeToggle.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+            });
+            
+            addEventBtn.addEventListener('click', () => {
+                openEventModal();
+            });
+            
+            closeEventModal.addEventListener('click', () => {
+                closeEventModalFunc();
+            });
+            
+            cancelEvent.addEventListener('click', () => {
+                closeEventModalFunc();
+            });
+            
+            eventForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                saveEvent();
+            });
+            
+            deleteEventBtn.addEventListener('click', () => {
+                deleteEvent();
+            });
+            
+            addTaskBtn.addEventListener('click', () => {
+                openTaskModal();
+            });
+            
+            closeTaskModal.addEventListener('click', () => {
+                closeTaskModalFunc();
+            });
+            
+            cancelTask.addEventListener('click', () => {
+                closeTaskModalFunc();
+            });
+            
+            taskForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                saveTask();
+            });
+            
+            deleteTaskBtn.addEventListener('click', () => {
+                deleteTask();
+            });
+            
+            // Check for saved dark mode preference
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.documentElement.classList.add('dark');
+            }
+            
+            // Functions
+            function navigatePeriod(direction) {
+                if (currentView === 'month') {
+                    currentDate.setMonth(currentDate.getMonth() + direction);
+                } else if (currentView === 'week') {
+                    currentDate.setDate(currentDate.getDate() + (direction * 7));
+                } else if (currentView === 'day') {
+                    currentDate.setDate(currentDate.getDate() + direction);
+                }
+                renderCalendar();
+            }
+            
+            function renderCalendar() {
+                if (currentView === 'month') {
+                    renderMonthView();
+                } else if (currentView === 'week') {
+                    renderWeekView();
+                } else if (currentView === 'day') {
+                    renderDayView();
+                }
+                
+                updatePeriodText();
+                renderTasks();
+            }
+            
+            function renderMonthView() {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const daysInLastMonth = new Date(year, month, 0).getDate();
+                
+                let calendarHTML = `
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        <div class="text-center font-medium py-2">Sun</div>
+                        <div class="text-center font-medium py-2">Mon</div>
+                        <div class="text-center font-medium py-2">Tue</div>
+                        <div class="text-center font-medium py-2">Wed</div>
+                        <div class="text-center font-medium py-2">Thu</div>
+                        <div class="text-center font-medium py-2">Fri</div>
+                        <div class="text-center font-medium py-2">Sat</div>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1">
+                `;
+                
+                // Previous month's days
+                for (let i = 0; i < firstDay; i++) {
+                    const day = daysInLastMonth - firstDay + i + 1;
+                    const date = new Date(year, month - 1, day);
+                    calendarHTML += createMonthDayElement(date, true);
+                }
+                
+                // Current month's days
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const date = new Date(year, month, i);
+                    const isToday = date.getTime() === today.getTime();
+                    calendarHTML += createMonthDayElement(date, false, isToday);
+                }
+                
+                // Next month's days
+                const totalCells = firstDay + daysInMonth;
+                const remainingCells = totalCells > 35 ? 42 - totalCells : 35 - totalCells;
+                
+                for (let i = 1; i <= remainingCells; i++) {
+                    const date = new Date(year, month + 1, i);
+                    calendarHTML += createMonthDayElement(date, true);
+                }
+                
+                calendarHTML += '</div>';
+                calendarContainer.innerHTML = calendarHTML;
+                
+                // Add event listeners to day elements
+                document.querySelectorAll('.calendar-day:not(.other-month)').forEach(dayElement => {
+                    const dateStr = dayElement.getAttribute('data-date');
+                    dayElement.addEventListener('click', () => {
+                        openEventModal(new Date(dateStr));
+                    });
+                });
+                
+                renderEvents();
+            }
+            
+            function createMonthDayElement(date, isOtherMonth, isToday = false) {
+                const dateStr = date.toISOString().split('T')[0];
+                const day = date.getDate();
+                
+                let className = `calendar-day p-2 rounded-md min-h-24 ${isOtherMonth ? 'other-month bg-gray-100 dark:bg-gray-800 text-gray-400' : 'bg-white dark:bg-gray-700'}`;
+                
+                if (isToday) {
+                    className += ' border-2 border-primary-500';
+                }
+                
+                return `
+                    <div class="${className}" data-date="${dateStr}">
+                        <div class="text-right font-medium">${day}</div>
+                        <div class="mt-1 space-y-1 events-container"></div>
+                    </div>
+                `;
+            }
+            
+            function renderWeekView() {
+                const startOfWeek = getStartOfWeek(currentDate);
+                const datesOfWeek = [];
+                
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(startOfWeek);
+                    date.setDate(startOfWeek.getDate() + i);
+                    datesOfWeek.push(date);
+                }
+                
+                let calendarHTML = `
+                    <div class="week-view">
+                        <div class="week-day-header"></div>
+                `;
+                
+                // Add day headers
+                datesOfWeek.forEach(date => {
+                    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    const dayNum = date.getDate();
+                    const isToday = isSameDay(date, new Date());
+                    
+                    let className = 'week-day-header';
+                    if (isToday) {
+                        className += ' bg-primary-100 dark:bg-primary-900 rounded-md';
+                    }
+                    
+                    calendarHTML += `
+                        <div class="${className}">
+                            <div>${dayName}</div>
+                            <div class="text-lg font-bold">${dayNum}</div>
+                        </div>
+                    `;
+                });
+                
+                // Add time slots
+                for (let hour = 0; hour < 24; hour++) {
+                    // Time label
+                    calendarHTML += `
+                        <div class="week-time-slot flex items-center justify-end pr-2 text-xs text-gray-500">
+                            ${formatHour(hour)}
+                        </div>
+                    `;
+                    
+                    // Day cells
+                    datesOfWeek.forEach(date => {
+                        const dateStr = date.toISOString().split('T')[0];
+                        const isToday = isSameDay(date, new Date());
+                        
+                        let className = 'week-day-cell';
+                        if (isToday) {
+                            className += ' bg-primary-50 dark:bg-primary-900/20';
+                        }
+                        
+                        calendarHTML += `
+                            <div class="${className}" data-date="${dateStr}" data-hour="${hour}">
+                                <div class="events-container absolute inset-0"></div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                calendarHTML += '</div>';
+                calendarContainer.innerHTML = calendarHTML;
+                
+                // Add current time indicator if today is in view
+                const today = new Date();
+                if (isDateInRange(today, datesOfWeek[0], datesOfWeek[6])) {
+                    renderCurrentTimeIndicator('week');
+                }
+                
+                renderEvents();
+            }
+            
+            function renderDayView() {
+                const date = currentDate;
+                const dateStr = date.toISOString().split('T')[0];
+                const isToday = isSameDay(date, new Date());
+                
+                const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+                const monthName = date.toLocaleDateString('en-US', { month: 'long' });
+                const dayNum = date.getDate();
+                const year = date.getFullYear();
+                
+                let calendarHTML = `
+                    <div class="mb-4">
+                        <h3 class="text-xl font-semibold">${dayName}, ${monthName} ${dayNum}, ${year}</h3>
+                    </div>
+                    <div class="day-view">
+                        <div class="day-time-column"></div>
+                        <div class="day-content-column"></div>
+                    </div>
+                `;
+                
+                calendarContainer.innerHTML = calendarHTML;
+                
+                const timeColumn = calendarContainer.querySelector('.day-time-column');
+                const contentColumn = calendarContainer.querySelector('.day-content-column');
+                
+                for (let hour = 0; hour < 24; hour++) {
+                    // Time label
+                    timeColumn.innerHTML += `
+                        <div class="day-time-slot flex items-center justify-end pr-2 text-xs text-gray-500">
+                            ${formatHour(hour)}
+                        </div>
+                    `;
+                    
+                    // Hour cell
+                    let className = 'day-hour-cell';
+                    if (isToday) {
+                        className += ' bg-primary-50 dark:bg-primary-900/20';
+                    }
+                    
+                    contentColumn.innerHTML += `
+                        <div class="${className}" data-date="${dateStr}" data-hour="${hour}">
+                            <div class="events-container absolute inset-0"></div>
+                        </div>
+                    `;
+                }
+                
+                // Add current time indicator if viewing today
+                if (isToday) {
+                    renderCurrentTimeIndicator('day');
+                }
+                
+                renderEvents();
+            }
+            
+            function renderCurrentTimeIndicator(viewType) {
+                const now = new Date();
+                const currentHour = now.getHours();
+                const currentMinute = now.getMinutes();
+                
+                // Calculate position based on view type
+                if (viewType === 'week') {
+                    const todayColumn = document.querySelector(`.week-day-cell[data-date="${now.toISOString().split('T')[0]}"]`);
+                    if (todayColumn) {
+                        const hourHeight = 60; // 60px per hour
+                        const minutePosition = (currentMinute / 60) * hourHeight;
+                        const topPosition = (currentHour * hourHeight) + minutePosition;
+                        
+                        const timeLine = document.createElement('div');
+                        timeLine.className = 'current-time-line';
+                        timeLine.style.top = `${topPosition}px`;
+                        
+                        const timeDot = document.createElement('div');
+                        timeDot.className = 'current-time-dot';
+                        timeDot.style.top = `${topPosition}px`;
+                        timeDot.style.left = '0';
+                        
+                        todayColumn.appendChild(timeLine);
+                        todayColumn.appendChild(timeDot);
+                    }
+                } else if (viewType === 'day') {
+                    const hourCells = document.querySelectorAll('.day-hour-cell');
+                    if (hourCells.length > 0) {
+                        const hourHeight = 60; // 60px per hour
+                        const minutePosition = (currentMinute / 60) * hourHeight;
+                        const topPosition = (currentHour * hourHeight) + minutePosition;
+                        
+                        const timeLine = document.createElement('div');
+                        timeLine.className = 'current-time-line';
+                        timeLine.style.top = `${topPosition}px`;
+                        
+                        const timeDot = document.createElement('div');
+                        timeDot.className = 'current-time-dot';
+                        timeDot.style.top = `${topPosition}px`;
+                        timeDot.style.left = '0';
+                        
+                        contentColumn = document.querySelector('.day-content-column');
+                        contentColumn.appendChild(timeLine);
+                        contentColumn.appendChild(timeDot);
+                    }
+                }
+            }
+            
+            function renderEvents() {
+                // Clear existing events
+                document.querySelectorAll('.events-container').forEach(container => {
+                    container.innerHTML = '';
+                });
+                
+                // Render events based on current view
+                events.forEach(event => {
+                    if (currentView === 'month') {
+                        renderEventInMonthView(event);
+                    } else if (currentView === 'week' || currentView === 'day') {
+                        renderEventInTimeView(event);
+                    }
+                });
+            }
+            
+            function renderEventInMonthView(event) {
+                const eventDate = new Date(event.startDate);
+                const dateStr = eventDate.toISOString().split('T')[0];
+                
+                const dayElement = document.querySelector(`.calendar-day[data-date="${dateStr}"]:not(.other-month)`);
+                if (!dayElement) return;
+                
+                const eventsContainer = dayElement.querySelector('.events-container');
+                if (!eventsContainer) return;
+                
+                const eventElement = document.createElement('div');
+                eventElement.className = `event-item text-xs p-1 rounded truncate cursor-pointer bg-${event.color} bg-opacity-20 text-${event.color} border-l-4 border-${event.color}`;
+                eventElement.innerHTML = `
+                    <div class="font-medium">${event.title}</div>
+                    ${event.allDay ? '' : `<div class="text-xs opacity-75">${formatTime(event.startTime)}</div>`}
+                `;
+                
+                eventElement.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editEvent(event.id);
+                });
+                
+                eventsContainer.appendChild(eventElement);
+            }
+            
+            function renderEventInTimeView(event) {
+                const startDate = new Date(`${event.startDate}T${event.startTime || '00:00'}`);
+                const endDate = event.endDate ? new Date(`${event.endDate}T${event.endTime || '00:00'}`) : new Date(startDate.getTime() + 60 * 60 * 1000); // Default 1 hour
+                
+                // Calculate position and size
+                const startHour = startDate.getHours();
+                const startMinute = startDate.getMinutes();
+                const endHour = endDate.getHours();
+                const endMinute = endDate.getMinutes();
+                
+                const top = (startHour * 60 + startMinute) / 60 * 60; // 60px per hour
+                const height = ((endHour * 60 + endMinute) - (startHour * 60 + startMinute)) / 60 * 60;
+                
+                // Create event element
+                const eventElement = document.createElement('div');
+                eventElement.className = `event-pill bg-${event.color} bg-opacity-20 border-l-4 border-${event.color} text-${event.color}`;
+                eventElement.style.top = `${top}px`;
+                eventElement.style.height = `${Math.max(height, 20)}px`;
+                eventElement.style.left = '2px';
+                eventElement.style.right = '2px';
+                eventElement.innerHTML = `
+                    <div class="font-medium text-xs">${formatTime(event.startTime)} ${event.title}</div>
+                `;
+                
+                eventElement.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editEvent(event.id);
+                });
+                
+                // Find the correct container based on view
+                let container;
+                if (currentView === 'week') {
+                    const dayOfWeek = startDate.getDay();
+                    container = document.querySelector(`.week-day-cell[data-date="${event.startDate}"] .events-container`);
+                } else if (currentView === 'day') {
+                    container = document.querySelector(`.day-hour-cell[data-date="${event.startDate}"] .events-container`);
+                }
+                
+                if (container) {
+                    container.appendChild(eventElement);
+                }
+            }
+            
+            function renderTasks() {
+                taskList.innerHTML = '';
+                
+                if (tasks.length === 0) {
+                    taskList.innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center py-4">No tasks yet</div>';
+                    return;
+                }
+                
+                // Sort tasks: incomplete first, then by due date
+                const sortedTasks = [...tasks].sort((a, b) => {
+                    if (a.completed !== b.completed) {
+                        return a.completed ? 1 : -1;
+                    }
+                    
+                    if (!a.dueDate && !b.dueDate) return 0;
+                    if (!a.dueDate) return 1;
+                    if (!b.dueDate) return -1;
+                    
+                    return new Date(a.dueDate) - new Date(b.dueDate);
+                });
+                
+                sortedTasks.forEach(task => {
+                    const taskElement = document.createElement('div');
+                    taskElement.className = `flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${task.completed ? 'opacity-60' : ''}`;
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'rounded text-primary-600 focus:ring-primary-500 dark:bg-gray-700 mr-2 task-checkbox';
+                    checkbox.checked = task.completed;
+                    checkbox.dataset.id = task.id;
+                    
+                    checkbox.addEventListener('change', () => {
+                        toggleTaskComplete(task.id);
+                    });
+                    
+                    const taskContent = document.createElement('div');
+                    taskContent.className = 'flex-1';
+                    
+                    const taskTitle = document.createElement('div');
+                    taskTitle.className = `font-medium ${task.completed ? 'line-through' : ''}`;
+                    taskTitle.textContent = task.title;
+                    
+                    const taskDueDate = document.createElement('div');
+                    taskDueDate.className = 'text-xs text-gray-500 dark:text-gray-400';
+                    
+                    if (task.dueDate) {
+                        const dueDate = new Date(task.dueDate);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        if (dueDate.toDateString() === today.toDateString()) {
+                            taskDueDate.textContent = 'Today';
+                        } else if (dueDate < today && !task.completed) {
+                            taskDueDate.textContent = 'Overdue';
+                            taskDueDate.classList.add('text-red-500');
+                        } else {
+                            taskDueDate.textContent = new Intl.DateTimeFormat('en-US', {
+                                month: 'short',
+                                day: 'numeric'
+                            }).format(dueDate);
+                        }
+                    }
+                    
+                    taskContent.appendChild(taskTitle);
+                    taskContent.appendChild(taskDueDate);
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-gray-500 dark:text-gray-400 mr-1';
+                    editBtn.innerHTML = '<i data-feather="edit" class="w-4 h-4"></i>';
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        editTask(task.id);
+                    });
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-gray-500 dark:text-gray-400';
+                    deleteBtn.innerHTML = '<i data-feather="trash-2" class="w-4 h-4"></i>';
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteTask(task.id);
+                    });
+                    
+                    taskElement.appendChild(checkbox);
+                    taskElement.appendChild(taskContent);
+                    taskElement.appendChild(editBtn);
+                    taskElement.appendChild(deleteBtn);
+                    
+                    taskList.appendChild(taskElement);
+                });
+                
+                feather.replace();
+            }
+            
+            function updatePeriodText() {
+                if (currentView === 'month') {
+                    currentPeriod.textContent = new Intl.DateTimeFormat('en-US', {
+                        month: 'long',
+                        year: 'numeric'
+                    }).format(currentDate);
+                } else if (currentView === 'week') {
+                    const startOfWeek = getStartOfWeek(currentDate);
+                    const endOfWeek = new Date(startOfWeek);
+                    endOfWeek.setDate(startOfWeek.getDate() + 6);
+                    
+                    // Check if both dates are in the same month
+                    if (startOfWeek.getMonth() === endOfWeek.getMonth()) {
+                        currentPeriod.textContent = new Intl.DateTimeFormat('en-US', {
+                            month: 'long',
+                            year: 'numeric'
+                        }).format(startOfWeek);
+                    } else {
+                        currentPeriod.textContent = `${new Intl.DateTimeFormat('en-US', {
+                            month: 'short'
+                        }).format(startOfWeek)} - ${new Intl.DateTimeFormat('en-US', {
+                            month: 'short',
+                            year: 'numeric'
+                        }).format(endOfWeek)}`;
+                    }
+                } else if (currentView === 'day') {
+                    currentPeriod.textContent = new Intl.DateTimeFormat('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    }).format(currentDate);
+                }
+            }
+            
+            function openEventModal(date = null) {
+                eventForm.reset();
+                document.getElementById('eventId').value = '';
+                eventModalTitle.textContent = 'Add New Event';
+                deleteEventBtn.classList.add('hidden');
+                
+                const now = new Date();
+                const defaultStartDate = date || now;
+                
+                document.getElementById('eventStartDate').value = defaultStartDate.toISOString().split('T')[0];
+                document.getElementById('eventStartTime').value = formatTimeForInput(now);
+                
+                // Set end date/time to 1 hour from now
+                const endTime = new Date(now.getTime() + 60 * 60 * 1000);
+                document.getElementById('eventEndDate').value = endTime.toISOString().split('T')[0];
+                document.getElementById('eventEndTime').value = formatTimeForInput(endTime);
+                
+                document.querySelector('input[name="eventColor"][value="primary-500"]').checked = true;
+                document.getElementById('eventAllDay').checked = false;
+                
+                eventModal.classList.remove('hidden');
+                anime({
+                    targets: eventModal.querySelector('div'),
+                    scale: [0.95, 1],
+                    opacity: [0, 1],
+                    duration: 200,
+                    easing: 'easeOutQuad'
+                });
+            }
+            
+            function closeEventModalFunc() {
+                anime({
+                    targets: eventModal.querySelector('div'),
+                    scale: [1, 0.95],
+                    opacity: [1, 0],
+                    duration: 200,
+                    easing: 'easeInQuad',
+                    complete: () => {
+                        eventModal.classList.add('hidden');
+                    }
+                });
+            }
+            
+            function openTaskModal() {
+                taskForm.reset();
+                document.getElementById('taskId').value = '';
+                taskModalTitle.textContent = 'Add New Task';
+                deleteTaskBtn.classList.add('hidden');
+                
+                document.getElementById('taskDueDate').value = new Date().toISOString().split('T')[0];
+                
+                taskModal.classList.remove('hidden');
+                anime({
+                    targets: taskModal.querySelector('div'),
+                    scale: [0.95, 1],
+                    opacity: [0, 1],
+                    duration: 200,
+                    easing: 'easeOutQuad'
+                });
+            }
+            
+            function closeTaskModalFunc() {
+                anime({
+                    targets: taskModal.querySelector('div'),
+                    scale: [1, 0.95],
+                    opacity: [1, 0],
+                    duration: 200,
+                    easing: 'easeInQuad',
+                    complete: () => {
+                        taskModal.classList.add('hidden');
+                    }
+                });
+            }
+            
+            function saveEvent() {
+                const eventId = document.getElementById('eventId').value;
+                const title = document.getElementById('eventTitle').value;
+                const description = document.getElementById('eventDescription').value;
+                const startDate = document.getElementById('eventStartDate').value;
+                const startTime = document.getElementById('eventStartTime').value;
+                const endDate = document.getElementById('eventEndDate').value;
+                const endTime = document.getElementById('eventEndTime').value;
+                const color = document.querySelector('input[name="eventColor"]:checked').value;
+                const allDay = document.getElementById('eventAllDay').checked;
+                
+                if (!title || !startDate) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+                
+                const event = {
+                    id: eventId || generateId(),
+                    title,
+                    description,
+                    startDate,
+                    startTime: allDay ? null : startTime,
+                    endDate: endDate || startDate,
+                    endTime: allDay ? null : (endTime || startTime),
+                    color,
+                    allDay
+                };
+                
+                if (eventId) {
+                    // Update existing event
+                    const index = events.findIndex(e => e.id === eventId);
+                    if (index !== -1) {
+                        events[index] = event;
+                    }
+                } else {
+                    // Add new event
+                    events.push(event);
+                }
+                
+                saveData();
+                renderCalendar();
+                closeEventModalFunc();
+            }
+            
+            function saveTask() {
+                const taskId = document.getElementById('taskId').value;
+                const title = document.getElementById('taskTitle').value;
+                const dueDate = document.getElementById('taskDueDate').value;
+                
+                if (!title) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+                
+                const task = {
+                    id: taskId || generateId(),
+                    title,
+                    dueDate,
+                    completed: false
+                };
+                
+                if (taskId) {
+                    // Update existing task
+                    const index = tasks.findIndex(t => t.id === taskId);
+                    if (index !== -1) {
+                        tasks[index] = task;
+                    }
+                } else {
+                    // Add new task
+                    tasks.push(task);
+                }
+                
+                saveData();
+                renderTasks();
+                closeTaskModalFunc();
+            }
+            
+            function editEvent(eventId) {
+                const event = events.find(e => e.id === eventId);
+                if (!event) return;
+                
+                document.getElementById('eventId').value = event.id;
+                document.getElementById('eventTitle').value = event.title;
+                document.getElementById('eventDescription').value = event.description || '';
+                document.getElementById('eventStartDate').value = event.startDate;
+                document.getElementById('eventStartTime').value = event.startTime || '';
+                document.getElementById('eventEndDate').value = event.endDate || event.startDate;
+                document.getElementById('eventEndTime').value = event.endTime || '';
+                document.querySelector(`input[name="eventColor"][value="${event.color}"]`).checked = true;
+                document.getElementById('eventAllDay').checked = event.allDay;
+                
+                eventModalTitle.textContent = 'Edit Event';
+                deleteEventBtn.classList.remove('hidden');
+                
+                openEventModal();
+            }
+            
+            function editTask(taskId) {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task) return;
+                
+                document.getElementById('taskId').value = task.id;
+                document.getElementById('taskTitle').value = task.title;
+                document.getElementById('taskDueDate').value = task.dueDate || '';
+                
+                taskModalTitle.textContent = 'Edit Task';
+                deleteTaskBtn.classList.remove('hidden');
+                
+                openTaskModal();
+            }
+            
+            function deleteEvent() {
+                const eventId = document.getElementById('eventId').value;
+                
+                if (confirm('Are you sure you want to delete this event?')) {
+                    events = events.filter(event => event.id !== eventId);
+                    saveData();
+                    renderCalendar();
+                    closeEventModalFunc();
+                }
+            }
+            
+            function deleteTask(taskId = null) {
+                const idToDelete = taskId || document.getElementById('taskId').value;
+                
+                if (confirm('Are you sure you want to delete this task?')) {
+                    tasks = tasks.filter(task => task.id !== idToDelete);
+                    saveData();
+                    renderTasks();
+                    
+                    if (!taskId) {
+                        closeTaskModalFunc();
+                    }
+                }
+            }
+            
+            function toggleTaskComplete(taskId) {
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.completed = !task.completed;
+                    saveData();
+                    renderTasks();
+                }
+            }
+            
+            function saveData() {
+                localStorage.setItem('calendarEvents', JSON.stringify(events));
+                localStorage.setItem('calendarTasks', JSON.stringify(tasks));
+            }
+            
+            function loadData() {
+                const savedEvents = localStorage.getItem('calendarEvents');
+                const savedTasks = localStorage.getItem('calendarTasks');
+                
+                if (savedEvents) {
+                    events = JSON.parse(savedEvents);
+                }
+                
+                if (savedTasks) {
+                    tasks = JSON.parse(savedTasks);
+                }
+                
+                // If no data exists, add sample data
+                if (events.length === 0) {
+                    addSampleEvents();
+                }
+            }
+            
+            function addSampleEvents() {
+                const today = new Date();
+                const tomorrow = new Date();
+                tomorrow.setDate(today.getDate() + 1);
+                const nextWeek = new Date();
+                nextWeek.setDate(today.getDate() + 7);
+                
+                events = [
+                    {
+                        id: generateId(),
+                        title: 'Team Meeting',
+                        description: 'Weekly sync with the team',
+                        startDate: today.toISOString().split('T')[0],
+                        startTime: '10:00',
+                        endDate: today.toISOString().split('T')[0],
+                        endTime: '11:00',
+                        color: 'primary-500',
+                        allDay: false
+                    },
+                    {
+                        id: generateId(),
+                        title: 'Lunch with Client',
+                        description: 'Discuss new project requirements',
+                        startDate: today.toISOString().split('T')[0],
+                        startTime: '12:30',
+                        endDate: today.toISOString().split('T')[0],
+                        endTime: '14:00',
+                        color: 'secondary-500',
+                        allDay: false
+                    },
+                    {
+                        id: generateId(),
+                        title: 'Gym Session',
+                        description: 'Personal training',
+                        startDate: tomorrow.toISOString().split('T')[0],
+                        startTime: '18:00',
+                        endDate: tomorrow.toISOString().split('T')[0],
+                        endTime: '19:00',
+                        color: 'green-500',
+                        allDay: false
+                    },
+                    {
+                        id: generateId(),
+                        title: 'Day Off',
+                        description: 'Enjoy your day off!',
+                        startDate: nextWeek.toISOString().split('T')[0],
+                        startTime: null,
+                        endDate: nextWeek.toISOString().split('T')[0],
+                        endTime: null,
+                        color: 'purple-500',
+                        allDay: true
+                    }
+                ];
+                
+                tasks = [
+                    {
+                        id: generateId(),
+                        title: 'Prepare presentation',
+                        dueDate: today.toISOString().split('T')[0],
+                        completed: false
+                    },
+                    {
+                        id: generateId(),
+                        title: 'Review project docs',
+                        dueDate: tomorrow.toISOString().split('T')[0],
+                        completed: false
+                    }
+                ];
+                
+                saveData();
+            }
+            
+            function startClock() {
+                updateClock();
+                setInterval(updateClock, 60000); // Update every minute
+            }
+            
+            function updateClock() {
+                // This function can be expanded to update current time indicators in views
+            }
+            
+            // Utility functions
+            function generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substring(2);
+            }
+            
+            function getStartOfWeek(date) {
+                const result = new Date(date);
+                const day = result.getDay();
+                const diff = result.getDate() - day;
+                result.setDate(diff);
+                result.setHours(0, 0, 0, 0);
+                return result;
+            }
+            
+            function isSameDay(date1, date2) {
+                return date1.toDateString() === date2.toDateString();
+            }
+            
+            function isDateInRange(date, start, end) {
+                return date >= start && date <= end;
+            }
+            
+            function formatHour(hour) {
+                if (hour === 0) return '12 AM';
+                if (hour < 12) return `${hour} AM`;
+                if (hour === 12) return '12 PM';
+                return `${hour - 12} PM`;
+            }
+            
+            function formatTime(timeStr) {
+                if (!timeStr) return '';
+                
+                const [hours, minutes] = timeStr.split(':');
+                const hour = parseInt(hours);
+                
+                if (hour === 0) return `12:${minutes} AM`;
+                if (hour < 12) return `${hour}:${minutes} AM`;
+                if (hour === 12) return `12:${minutes} PM`;
+                return `${hour - 12}:${minutes} PM`;
+            }
+            
+            function formatTimeForInput(date) {
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                return `${hours}:${minutes}`;
+            }
+        });
+    </script>
+</body>
+</html>

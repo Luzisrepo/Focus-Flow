@@ -10,6 +10,10 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
   <script src="https://unpkg.com/tsparticles@2.0.5/tsparticles.min.js"></script>
+  <!-- Add Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Add Spline -->
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.10.82/build/spline-viewer.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
@@ -116,6 +120,17 @@
     
     .dark .glassmorphism {
       background: rgba(31, 41, 55, 0.85);
+    }
+    
+    /* Spline Background */
+    .spline-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      opacity: 0.7;
     }
     
     /* Navbar Styles */
@@ -248,6 +263,11 @@
   </style>
 </head>
 <body class="transition-colors duration-300">
+  <!-- Spline Background -->
+  <div class="spline-background">
+    <spline-viewer url="https://prod.spline.design/TeW6LT4NcEYKRkbM/scene.splinecode"></spline-viewer>
+  </div>
+
   <!-- Navigation Bar -->
   <header>
     <nav class="nav-primary">
@@ -298,26 +318,228 @@
     const { motion, AnimatePresence, useAnimation, useMotionValue, useTransform, animate } = window.Motion;
     const { tsParticles } = window;
 
+    // Initialize Supabase
+    const supabaseUrl = 'https://dkfimhcwiufignzfqnxm.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrZmltaGN3aXVmaWduemZxbnhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5OTc3MjQsImV4cCI6MjA3NDU3MzcyNH0.lOtCk4v3fkd1DJfvpqrv-NgyByNhEsaHeL4GEqGrQa8';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
     const FocusFlow = () => {
       const [darkMode, setDarkMode] = useState(true);
       const [activeView, setActiveView] = useState('grid');
       const [searchQuery, setSearchQuery] = useState('');
       const [timerRunning, setTimerRunning] = useState(false);
-      const [timerSeconds, setTimerSeconds] = useState(1500); // 25 minutes
-      const [tasks, setTasks] = useState([
+      const [timerSeconds, setTimerSeconds] = useState(1500);
+      const [tasks, setTasks] = useState([]);
+      const [notes, setNotes] = useState([]);
+      const [suggestions, setSuggestions] = useState([]);
+      const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+      const [draggedTask, setDraggedTask] = useState(null);
+      const [user, setUser] = useState(null);
+      const [showLoginModal, setShowLoginModal] = useState(false);
+      const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+      const [authData, setAuthData] = useState({ email: '', password: '', fullName: '' });
+      const [authLoading, setAuthLoading] = useState(false);
+      const [authError, setAuthError] = useState('');
+      
+      // Demo data for guest users
+      const demoTasks = [
         { id: 1, title: 'Complete project proposal', status: 'todo', note: 'Due by Friday' },
         { id: 2, title: 'Review design mockups', status: 'in-progress', note: 'Feedback needed' },
         { id: 3, title: 'Schedule team meeting', status: 'done', note: 'Include remote members' },
         { id: 4, title: 'Update documentation', status: 'todo', note: 'API changes' },
-      ]);
-      const [notes, setNotes] = useState([
+      ];
+      
+      const demoNotes = [
         { id: 1, content: 'Discuss new feature roadmap with team', color: 'bg-blue-100' },
         { id: 2, content: 'Research performance optimization techniques', color: 'bg-purple-100' },
-      ]);
-      const [suggestions, setSuggestions] = useState([]);
-      const [showShortcutHelp, setShowShortcutHelp] = useState(false);
-      const [draggedTask, setDraggedTask] = useState(null);
-      
+      ];
+
+      // Check for existing session on component mount
+      useEffect(() => {
+        checkUser();
+      }, []);
+
+      const checkUser = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user || null);
+        
+        if (session?.user) {
+          await fetchUserData(session.user.id);
+        } else {
+          // Load demo data for guest users
+          setTasks(demoTasks);
+          setNotes(demoNotes);
+        }
+      };
+
+      const fetchUserData = async (userId) => {
+        try {
+          // Fetch user's tasks
+          const { data: tasksData, error: tasksError } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+          if (tasksError) throw tasksError;
+          setTasks(tasksData || []);
+
+          // Fetch user's notes
+          const { data: notesData, error: notesError } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+          if (notesError) throw notesError;
+          setNotes(notesData || []);
+
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      };
+
+      const handleAuth = async (e) => {
+        e.preventDefault();
+        setAuthLoading(true);
+        setAuthError('');
+
+        try {
+          if (authMode === 'signup') {
+            const { data, error } = await supabase.auth.signUp({
+              email: authData.email,
+              password: authData.password,
+              options: {
+                data: {
+                  full_name: authData.fullName,
+                },
+              },
+            });
+            if (error) throw error;
+            if (data.user) {
+              setUser(data.user);
+              setShowLoginModal(false);
+            }
+          } else {
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email: authData.email,
+              password: authData.password,
+            });
+            if (error) throw error;
+            setUser(data.user);
+            setShowLoginModal(false);
+          }
+        } catch (error) {
+          setAuthError(error.message);
+        } finally {
+          setAuthLoading(false);
+        }
+      };
+
+      const handleSignOut = async () => {
+        await supabase.auth.signOut();
+        setUser(null);
+        setTasks(demoTasks);
+        setNotes(demoNotes);
+      };
+
+      const saveTaskToDB = async (task) => {
+        if (!user) return;
+        
+        try {
+          const taskData = {
+            user_id: user.id,
+            title: task.title,
+            status: task.status,
+            note: task.note,
+          };
+
+          if (task.db_id) {
+            // Update existing task
+            const { error } = await supabase
+              .from('tasks')
+              .update(taskData)
+              .eq('id', task.db_id);
+            if (error) throw error;
+          } else {
+            // Create new task
+            const { data, error } = await supabase
+              .from('tasks')
+              .insert([taskData])
+              .select()
+              .single();
+            if (error) throw error;
+            // Update local task with database ID
+            return { ...task, db_id: data.id };
+          }
+        } catch (error) {
+          console.error('Error saving task:', error);
+        }
+        return task;
+      };
+
+      const saveNoteToDB = async (note) => {
+        if (!user) return;
+        
+        try {
+          const noteData = {
+            user_id: user.id,
+            content: note.content,
+            color: note.color,
+          };
+
+          if (note.db_id) {
+            // Update existing note
+            const { error } = await supabase
+              .from('notes')
+              .update(noteData)
+              .eq('id', note.db_id);
+            if (error) throw error;
+          } else {
+            // Create new note
+            const { data, error } = await supabase
+              .from('notes')
+              .insert([noteData])
+              .select()
+              .single();
+            if (error) throw error;
+            // Update local note with database ID
+            return { ...note, db_id: data.id };
+          }
+        } catch (error) {
+          console.error('Error saving note:', error);
+        }
+        return note;
+      };
+
+      const deleteTaskFromDB = async (taskId) => {
+        if (!user || !taskId) return;
+        
+        try {
+          const { error } = await supabase
+            .from('tasks')
+            .delete()
+            .eq('id', taskId);
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error deleting task:', error);
+        }
+      };
+
+      const deleteNoteFromDB = async (noteId) => {
+        if (!user || !noteId) return;
+        
+        try {
+          const { error } = await supabase
+            .from('notes')
+            .delete()
+            .eq('id', noteId);
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error deleting note:', error);
+        }
+      };
+
       const particlesInit = async (engine) => {
         await tsParticles.load(engine, {
           particles: {
@@ -489,17 +711,19 @@
         e.dataTransfer.dropEffect = 'move';
       };
 
-      const handleDrop = (e, status) => {
+      const handleDrop = async (e, status) => {
         e.preventDefault();
         if (draggedTask && draggedTask.status !== status) {
+          const updatedTask = { ...draggedTask, status };
           setTasks(tasks.map(task => 
-            task.id === draggedTask.id ? { ...task, status } : task
+            task.id === draggedTask.id ? updatedTask : task
           ));
+          await saveTaskToDB(updatedTask);
         }
         setDraggedTask(null);
       };
 
-      const addTask = () => {
+      const addTask = async () => {
         const newTask = {
           id: Date.now(),
           title: 'New Task',
@@ -507,9 +731,18 @@
           note: ''
         };
         setTasks([...tasks, newTask]);
+        
+        if (user) {
+          const savedTask = await saveTaskToDB(newTask);
+          if (savedTask?.db_id) {
+            setTasks(prev => prev.map(task => 
+              task.id === newTask.id ? savedTask : task
+            ));
+          }
+        }
       };
 
-      const addNote = () => {
+      const addNote = async () => {
         const colors = ['bg-blue-100', 'bg-purple-100', 'bg-pink-100', 'bg-green-100'];
         const newNote = {
           id: Date.now(),
@@ -517,26 +750,61 @@
           color: colors[Math.floor(Math.random() * colors.length)]
         };
         setNotes([...notes, newNote]);
+        
+        if (user) {
+          const savedNote = await saveNoteToDB(newNote);
+          if (savedNote?.db_id) {
+            setNotes(prev => prev.map(note => 
+              note.id === newNote.id ? savedNote : note
+            ));
+          }
+        }
       };
 
-      const updateTask = (id, updates) => {
-        setTasks(tasks.map(task => 
+      const updateTask = async (id, updates) => {
+        const updatedTasks = tasks.map(task => 
           task.id === id ? { ...task, ...updates } : task
-        ));
+        );
+        setTasks(updatedTasks);
+        
+        if (user) {
+          const taskToUpdate = updatedTasks.find(task => task.id === id);
+          if (taskToUpdate) {
+            await saveTaskToDB(taskToUpdate);
+          }
+        }
       };
 
-      const updateNote = (id, content) => {
-        setNotes(notes.map(note => 
+      const updateNote = async (id, content) => {
+        const updatedNotes = notes.map(note => 
           note.id === id ? { ...note, content } : note
-        ));
+        );
+        setNotes(updatedNotes);
+        
+        if (user) {
+          const noteToUpdate = updatedNotes.find(note => note.id === id);
+          if (noteToUpdate) {
+            await saveNoteToDB(noteToUpdate);
+          }
+        }
       };
 
-      const deleteTask = (id) => {
+      const deleteTask = async (id) => {
+        const taskToDelete = tasks.find(task => task.id === id);
         setTasks(tasks.filter(task => task.id !== id));
+        
+        if (user && taskToDelete?.db_id) {
+          await deleteTaskFromDB(taskToDelete.db_id);
+        }
       };
 
-      const deleteNote = (id) => {
+      const deleteNote = async (id) => {
+        const noteToDelete = notes.find(note => note.id === id);
         setNotes(notes.filter(note => note.id !== id));
+        
+        if (user && noteToDelete?.db_id) {
+          await deleteNoteFromDB(noteToDelete.db_id);
+        }
       };
 
       const resetTimer = () => {
@@ -546,9 +814,102 @@
 
       const progress = 100 - (timerSeconds / 1500 * 100);
 
+      // Show demo data only for guest users
+      const showDemoData = !user;
+
       return (
         <div className={`min-h-screen p-4 md:p-8 ${darkMode ? 'dark' : ''}`} style={{ paddingTop: '100px' }}>
           <div className="particles" id="tsparticles"></div>
+          
+          {/* Login Modal */}
+          <AnimatePresence>
+            {showLoginModal && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                onClick={() => setShowLoginModal(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className="glassmorphism rounded-2xl p-6 w-full max-w-md"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
+                    {authMode === 'login' ? 'Login to FocusFlow' : 'Create Account'}
+                  </h2>
+                  
+                  <form onSubmit={handleAuth} className="space-y-4">
+                    {authMode === 'signup' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Full Name
+                        </label>
+                        <input
+                          type="text"
+                          value={authData.fullName}
+                          onChange={(e) => setAuthData({...authData, fullName: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                          required
+                        />
+                      </div>
+                    )}
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={authData.email}
+                        onChange={(e) => setAuthData({...authData, email: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Password
+                      </label>
+                      <input
+                        type="password"
+                        value={authData.password}
+                        onChange={(e) => setAuthData({...authData, password: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        required
+                      />
+                    </div>
+                    
+                    {authError && (
+                      <div className="text-red-500 text-sm">{authError}</div>
+                    )}
+                    
+                    <button
+                      type="submit"
+                      disabled={authLoading}
+                      className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+                    >
+                      {authLoading ? 'Loading...' : (authMode === 'login' ? 'Login' : 'Sign Up')}
+                    </button>
+                    
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                        className="text-blue-500 hover:text-blue-600 text-sm"
+                      >
+                        {authMode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Login'}
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
@@ -571,6 +932,35 @@
               </motion.div>
               
               <div className="flex items-center gap-4">
+                {user ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-center gap-3"
+                  >
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      Welcome, {user.email}
+                    </span>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleSignOut}
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm"
+                    >
+                      Logout
+                    </motion.button>
+                  </motion.div>
+                ) : (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowLoginModal(true)}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm"
+                  >
+                    Login
+                  </motion.button>
+                )}
+                
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -645,6 +1035,26 @@
                 </div>
               </div>
             </header>
+            
+            {/* Demo Data Notice for Guest Users */}
+            {showDemoData && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 p-4 bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 rounded-lg"
+              >
+                <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+                  <strong>Demo Mode:</strong> You are viewing demonstration data. 
+                  <button 
+                    onClick={() => setShowLoginModal(true)}
+                    className="ml-1 text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Login or sign up
+                  </button> 
+                  to save your own tasks and notes.
+                </p>
+              </motion.div>
+            )}
             
             {/* Main Content */}
             <main className="space-y-8">

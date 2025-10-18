@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const glyphs = " .:-=+*#%@";
 
-    // ✅ NEW ASCII LOGO
+    
     const logoText = [
         "░▒▓████████▓▒░▒▓██████▓▒░ ░▒▓██████▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓███████▓▒░      ░▒▓████████▓▒░▒▓█▓▒░      ░▒▓██████▓▒░░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░ ",
         "░▒▓█▓▒░     ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░             ░▒▓█▓▒░      ░▒▓█▓▒░     ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░ ",
@@ -135,6 +135,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ✅ Redirect after 10 seconds
     setTimeout(() => {
-        window.location.href = '/home';
-    }, 10000);
+        window.location.href = '/Home';
+    }, 6543);
 });
